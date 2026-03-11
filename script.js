@@ -1539,15 +1539,23 @@ document.getElementById("stat-average-score").textContent = `${averageScore}%`;
 document.addEventListener("DOMContentLoaded", () => {
 
 handleTeacherRegister();
+
 handleTeacherLogin();
+
 protectTeacherPages();
+
 handleQuizGenerator();
+
 handleStudentAccess();
+
 handleStudentQuiz();
+
 handleStudentResultPage();
 
 populateTeacherDashboard();
+
 populateQuizLibrary();
+
 populateTeacherResultsPage();
 
 });
