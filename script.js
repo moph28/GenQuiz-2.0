@@ -1447,44 +1447,36 @@ function bindQuizLibraryActions(filteredQuizzes) {
     });
   });
 
-  document.querySelectorAll(".delete-quiz-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      const quizId = button.getAttribute("data-id");
-      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
+  document.querySelectorAll(".delete-quiz-btn").forEach(button => {
 
-      if (!quiz) return;
+button.addEventListener("click", () => {
 
-      document.querySelectorAll(".delete-quiz-btn").forEach((button) => {
+const quizId = button.dataset.id;
 
-  button.addEventListener("click", () => {
+const modal = document.getElementById("delete-modal");
+const modalText = document.getElementById("delete-modal-text");
+const confirmBtn = document.getElementById("confirm-delete-btn");
+const cancelBtn = document.getElementById("cancel-delete-btn");
 
-    const quizId = button.getAttribute("data-id");
-    const quiz = filteredQuizzes.find(q => q.quizId === quizId);
+modal.classList.remove("hidden");
 
-    const modal = document.getElementById("delete-modal");
-    const modalText = document.getElementById("delete-modal-text");
-    const confirmBtn = document.getElementById("confirm-delete-btn");
-    const cancelBtn = document.getElementById("cancel-delete-btn");
+confirmBtn.onclick = () => {
 
-    modal.classList.remove("hidden");
-    modalText.textContent = `Delete "${quiz.title}"?`;
+deleteQuizById(quizId);
 
-    confirmBtn.onclick = () => {
+modal.classList.add("hidden");
 
-      deleteQuizById(quizId);
+renderLibraryQuizPreview(null);
 
-      modal.classList.add("hidden");
+populateQuizLibrary();
 
-      renderLibraryQuizPreview(null);
+};
 
-      populateQuizLibrary();
-    };
+cancelBtn.onclick = () => {
+modal.classList.add("hidden");
+};
 
-    cancelBtn.onclick = () => {
-      modal.classList.add("hidden");
-    };
-
-  });
+});
 
 });
       function populateTeacherDashboard(){
