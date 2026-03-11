@@ -813,3 +813,21 @@ grid-template-columns:1fr;
 }
 
 }
+.library-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inline-btn.danger-btn {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fecaca;
+}
+
+.inline-btn.danger-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.top-gap {
+  margin-top: 24px;
+}
