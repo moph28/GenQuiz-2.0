@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Login | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="brand-row compact">
+        <div class="brand-icon small">GQ</div>
+        <div>
+          <h1 class="auth-title">Teacher Login</h1>
+          <p class="auth-subtitle">Sign in to access the teacher dashboard.</p>
+        </div>
+      </div>
+
+      <form id="teacher-login-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="login-username">Username</label>
+          <input id="login-username" name="username" type="text" placeholder="Enter username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" placeholder="Enter password" required />
+        </div>
+
+        <p id="login-message" class="message" aria-live="polite"></p>
+
+        <div class="button-stack">
+          <button class="primary-btn" type="submit">Sign In</button>
+          <a class="secondary-btn" href="teacher-register.html">Create Account</a>
+          <a class="text-link" href="index.html">Back to Role Selection</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
