@@ -799,3 +799,17 @@ select {
     gap: 4px;
   }
 }
+.results-filters{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:16px;
+margin-top:16px;
+}
+
+@media(max-width:768px){
+
+.results-filters{
+grid-template-columns:1fr;
+}
+
+}
