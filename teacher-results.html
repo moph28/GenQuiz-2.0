@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Results | GenQuiz</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="dashboard-layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+<div class="sidebar-brand">
+<div class="brand-icon small">GQ</div>
+<div>
+<h2>GenQuiz</h2>
+<p>Teacher Panel</p>
+</div>
+</div>
+
+<nav class="sidebar-nav">
+<a class="nav-item" href="teacher-dashboard.html">Dashboard</a>
+<a class="nav-item" href="quiz-generator.html">Quiz Generator</a>
+<a class="nav-item" href="quiz-library.html">Quiz Library</a>
+<a class="nav-item active" href="teacher-results.html">Results</a>
+</nav>
+
+<button id="logout-btn" class="sidebar-back">Log Out</button>
+
+</aside>
+
+<!-- MAIN -->
+<section class="dashboard-main">
+
+<header class="dashboard-header">
+<div>
+<p class="eyebrow">Teacher Results</p>
+<h1>Student Quiz Results</h1>
+</div>
+<div class="header-chip">Performance Monitor</div>
+</header>
+
+<!-- FILTERS -->
+
+<section class="panel">
+
+<div class="panel-head">
+<h2>Filter Results</h2>
+</div>
+
+<div class="results-filters">
+
+<div class="form-group">
+<label>Student Username</label>
+<input id="results-student-filter" type="text" placeholder="Search student">
+</div>
+
+<div class="form-group">
+<label>Quiz Code</label>
+<input id="results-quiz-filter" type="text" placeholder="Search quiz code">
+</div>
+
+<div class="form-group">
+<label>Date</label>
+<input id="results-date-filter" type="date">
+</div>
+
+<button id="results-clear-btn" class="secondary-btn">Clear Filters</button>
+
+</div>
+
+</section>
+
+<!-- RESULTS TABLE -->
+
+<section class="panel">
+
+<div class="panel-head">
+<h2>Quiz Attempts</h2>
+</div>
+
+<div class="table-wrap">
+
+<table class="data-table">
+
+<thead>
+<tr>
+<th>Student</th>
+<th>Quiz Code</th>
+<th>Score</th>
+<th>Percentage</th>
+<th>Date</th>
+</tr>
+</thead>
+
+<tbody id="results-table-body">
+
+<tr>
+<td colspan="5" class="empty-cell">No results yet.</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</section>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
