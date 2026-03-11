@@ -327,10 +327,58 @@ function renderQuizPreview(quiz) {
 function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.onerror = () => reject(new Error("Failed to read TXT file."));
+
     reader.readAsText(file);
   });
+}
+
+function readArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read file data."));
+
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function readPdfFile(file) {
+  if (typeof pdfjsLib === "undefined") {
+    throw new Error("PDF library failed to load.");
+  }
+
+  const arrayBuffer = await readArrayBuffer(file);
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let text = "";
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+
+    const pageText = content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+
+    text += ` ${pageText}`;
+  }
+
+  return normalizeSpaces(text);
+}
+
+async function readDocxFile(file) {
+  if (typeof mammoth === "undefined") {
+    throw new Error("DOCX library failed to load.");
+  }
+
+  const arrayBuffer = await readArrayBuffer(file);
+  const result = await mammoth.extractRawText({ arrayBuffer });
+
+  return normalizeSpaces(result.value || "");
 }
 
 async function extractTextFromFile(file) {
@@ -340,15 +388,16 @@ async function extractTextFromFile(file) {
     return readTextFile(file);
   }
 
-  if (extension === "pdf" || extension === "docx") {
-    throw new Error(
-      "PDF and DOCX support will be added in the next implementation step. Please use TXT first."
-    );
+  if (extension === "pdf") {
+    return readPdfFile(file);
   }
 
-  throw new Error("Unsupported file type. Please upload a TXT file.");
-}
+  if (extension === "docx") {
+    return readDocxFile(file);
+  }
 
+  throw new Error("Unsupported file type. Please upload a TXT, PDF, or DOCX file.");
+                                   }
 function handleTeacherRegister() {
   const form = document.getElementById("teacher-register-form");
   const message = document.getElementById("register-message");
