@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Quiz | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="quiz-page">
+    <section class="quiz-shell">
+      <header class="quiz-header">
+        <div>
+          <p class="eyebrow">Student Quiz</p>
+          <h1 id="quiz-title">Quiz</h1>
+        </div>
+        <div class="quiz-meta">
+          <span id="quiz-student-name">Student</span>
+          <span id="quiz-code-display">Code</span>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="progress-row">
+          <p id="quiz-progress-text">Question 1 of 1</p>
+          <div class="progress-track">
+            <div id="quiz-progress-bar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div id="student-quiz-container" class="quiz-container">
+          <p class="preview-empty">Loading quiz...</p>
+        </div>
+
+        <p id="student-quiz-message" class="message" aria-live="polite"></p>
+
+        <div class="quiz-actions">
+          <button id="prev-question-btn" class="secondary-btn" type="button">Previous</button>
+          <button id="next-question-btn" class="primary-btn" type="button">Next</button>
+          <button id="submit-quiz-btn" class="primary-btn hidden" type="button">Submit Quiz</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
