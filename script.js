@@ -1,6 +1,7 @@
 const STORAGE_KEYS = {
   teacherAccount: "genquiz_teacher_account",
   teacherSession: "genquiz_teacher_session",
+  quizzes: "genquiz_saved_quizzes",
 };
 
 function saveTeacherAccount(username, password) {
@@ -14,7 +15,10 @@ function getTeacherAccount() {
 }
 
 function saveTeacherSession(username) {
-  localStorage.setItem(STORAGE_KEYS.teacherSession, JSON.stringify({ username, role: "teacher" }));
+  localStorage.setItem(
+    STORAGE_KEYS.teacherSession,
+    JSON.stringify({ username, role: "teacher" })
+  );
 }
 
 function getTeacherSession() {
@@ -26,8 +30,268 @@ function clearTeacherSession() {
   localStorage.removeItem(STORAGE_KEYS.teacherSession);
 }
 
+function getSavedQuizzes() {
+  const raw = localStorage.getItem(STORAGE_KEYS.quizzes);
+  return raw ? JSON.parse(raw) : [];
+}
+
+function saveQuiz(quiz) {
+  const quizzes = getSavedQuizzes();
+  quizzes.push(quiz);
+  localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
+}
+
 function redirect(path) {
   window.location.href = path;
+}
+
+function _toInt(value, fallback = 0) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function normalizeSpaces(text) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function splitSentences(text) {
+  return text
+    .split(/[\n\r]+|(?<=[.!?])\s+/)
+    .map((sentence) => normalizeSpaces(sentence))
+    .filter(Boolean);
+}
+
+function cleanTerm(term) {
+  return normalizeSpaces(
+    term
+      .replace(/^(the|a|an)\s+/i, "")
+      .replace(/[,:;]+$/g, "")
+  );
+}
+
+function getDifficultyRules(difficulty) {
+  if (difficulty === "easy") {
+    return { minLen: 20, maxLen: 110, tfFalseRate: 20 };
+  }
+  if (difficulty === "hard") {
+    return { minLen: 25, maxLen: 180, tfFalseRate: 60 };
+  }
+  return { minLen: 20, maxLen: 140, tfFalseRate: 40 };
+}
+
+function extractDefinitions(text, difficulty) {
+  const rules = getDifficultyRules(difficulty);
+  const sentences = splitSentences(text);
+  const definitions = [];
+
+  for (const sentence of sentences) {
+    const lowered = sentence.toLowerCase();
+    const isCount = (lowered.match(/\sis\s/g) || []).length;
+    const areCount = (lowered.match(/\sare\s/g) || []).length;
+
+    if (isCount + areCount !== 1) continue;
+    if (sentence.length < rules.minLen || sentence.length > rules.maxLen) continue;
+
+    let parts;
+    if (/\sis\s/i.test(sentence)) {
+      parts = sentence.split(/\bis\b/i);
+    } else {
+      parts = sentence.split(/\bare\b/i);
+    }
+
+    if (!parts || parts.length < 2) continue;
+
+    const term = cleanTerm(parts[0]);
+    const definition = normalizeSpaces(parts.slice(1).join(" ")).replace(/[.]+$/, "");
+
+    if (term.length < 2 || definition.length < 8) continue;
+
+    definitions.push({ term, definition });
+  }
+
+  return definitions;
+}
+
+function makeIdentificationQuestion(definitionObj) {
+  return {
+    type: "Identification",
+    question: `What term matches the following description: ${definitionObj.definition}?`,
+    answer: definitionObj.term,
+  };
+}
+
+function makeTrueFalseQuestion(definitionObj, termPool, tfFalseRate) {
+  const makeFalse = Math.random() * 100 < tfFalseRate;
+  if (makeFalse && termPool.length > 1) {
+    const wrongChoices = termPool.filter(
+      (term) => term.toLowerCase() !== definitionObj.term.toLowerCase()
+    );
+    const wrongTerm = wrongChoices[Math.floor(Math.random() * wrongChoices.length)];
+    return {
+      type: "True/False",
+      question: `True or False: ${wrongTerm} is ${definitionObj.definition}.`,
+      options: ["True", "False"],
+      answer: "False",
+    };
+  }
+
+  return {
+    type: "True/False",
+    question: `True or False: ${definitionObj.term} is ${definitionObj.definition}.`,
+    options: ["True", "False"],
+    answer: "True",
+  };
+}
+
+function shuffleArray(items) {
+  const array = [...items];
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function makeMultipleChoiceQuestion(definitionObj, termPool) {
+  const distractors = shuffleArray(
+    termPool.filter((term) => term.toLowerCase() !== definitionObj.term.toLowerCase())
+  ).slice(0, 3);
+
+  const options = shuffleArray([
+    definitionObj.term,
+    ...distractors,
+  ]);
+
+  while (options.length < 4) {
+    options.push("None of the above");
+  }
+
+  return {
+    type: "Multiple Choice",
+    question: `Which term best matches this description: ${definitionObj.definition}?`,
+    options,
+    answer: definitionObj.term,
+  };
+}
+
+function generateQuizCode() {
+  const randomPart = Math.floor(1000 + Math.random() * 9000);
+  return `GQ${randomPart}`;
+}
+
+function getSelectedQuestionTypes() {
+  return Array.from(
+    document.querySelectorAll('input[name="question_types"]:checked')
+  ).map((checkbox) => checkbox.value);
+}
+
+function buildDistribution() {
+  const mcqCount = _toInt(document.getElementById("mcq-count")?.value, 0);
+  const tfCount = _toInt(document.getElementById("tf-count")?.value, 0);
+  const idCount = _toInt(document.getElementById("id-count")?.value, 0);
+
+  const distribution = [];
+  if (mcqCount > 0) distribution.push(["mcq", mcqCount]);
+  if (tfCount > 0) distribution.push(["tf", tfCount]);
+  if (idCount > 0) distribution.push(["id", idCount]);
+  return distribution;
+}
+
+function cycleDefinitions(definitions, count) {
+  const selected = [];
+  let index = 0;
+
+  while (selected.length < count && definitions.length > 0) {
+    selected.push(definitions[index % definitions.length]);
+    index += 1;
+  }
+
+  return selected;
+}
+
+function generateByDistribution(definitions, difficulty, distribution) {
+  if (!definitions.length) return [];
+
+  const rules = getDifficultyRules(difficulty);
+  const termPool = [...new Set(definitions.map((item) => item.term))];
+  const questions = [];
+
+  for (const [type, count] of distribution) {
+    const selectedDefinitions = cycleDefinitions(definitions, count);
+
+    for (const definitionObj of selectedDefinitions) {
+      if (type === "mcq") {
+        questions.push(makeMultipleChoiceQuestion(definitionObj, termPool));
+      } else if (type === "tf") {
+        questions.push(makeTrueFalseQuestion(definitionObj, termPool, rules.tfFalseRate));
+      } else if (type === "id") {
+        questions.push(makeIdentificationQuestion(definitionObj));
+      }
+    }
+  }
+
+  return questions;
+}
+
+function renderQuizPreview(quiz) {
+  const preview = document.getElementById("quiz-preview");
+  if (!preview) return;
+
+  if (!quiz || !quiz.questions.length) {
+    preview.innerHTML = `<p class="preview-empty">No quiz generated yet.</p>`;
+    return;
+  }
+
+  const questionMarkup = quiz.questions
+    .map((item, index) => {
+      const optionsMarkup = item.options
+        ? `<ul>${item.options.map((option) => `<li>${option}</li>`).join("")}</ul>`
+        : "";
+
+      return `
+        <article class="preview-question">
+          <h3>${index + 1}. [${item.type}] ${item.question}</h3>
+          ${optionsMarkup}
+          <p><strong>Answer:</strong> ${item.answer}</p>
+        </article>
+      `;
+    })
+    .join("");
+
+  preview.innerHTML = `
+    <div class="preview-meta">
+      <p><strong>Quiz Code:</strong> ${quiz.quizCode}</p>
+      <p><strong>Title:</strong> ${quiz.title}</p>
+      <p><strong>Difficulty:</strong> ${quiz.difficulty}</p>
+      <p><strong>Total Questions:</strong> ${quiz.questions.length}</p>
+    </div>
+    ${questionMarkup}
+  `;
+}
+
+function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Failed to read file."));
+
+    reader.readAsText(file);
+  });
+}
+
+async function extractTextFromFile(file) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+
+  if (extension === "txt") {
+    return readTextFile(file);
+  }
+
+  if (extension === "pdf" || extension === "docx") {
+    throw new Error("PDF and DOCX support will be added in the next implementation step. Please use TXT first.");
+  }
+
+  throw new Error("Unsupported file type. Please upload a TXT file.");
 }
 
 function handleTeacherRegister() {
@@ -93,9 +357,7 @@ function handleTeacherLogin() {
       return;
     }
 
-    const isValid =
-      account.username === username &&
-      account.password === password;
+    const isValid = account.username === username && account.password === password;
 
     if (!isValid) {
       message.className = "message error";
@@ -111,9 +373,11 @@ function handleTeacherLogin() {
   });
 }
 
-function protectTeacherDashboard() {
-  const onTeacherDashboard = window.location.pathname.endsWith("teacher-dashboard.html");
-  if (!onTeacherDashboard) return;
+function protectTeacherPages() {
+  const protectedPages = ["teacher-dashboard.html", "quiz-generator.html"];
+  const currentPath = window.location.pathname.split("/").pop();
+
+  if (!protectedPages.includes(currentPath)) return;
 
   const session = getTeacherSession();
   if (!session || session.role !== "teacher") {
@@ -135,8 +399,91 @@ function protectTeacherDashboard() {
   }
 }
 
+function handleQuizGenerator() {
+  const form = document.getElementById("quiz-generator-form");
+  const message = document.getElementById("generator-message");
+  if (!form || !message) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    message.className = "message";
+    message.textContent = "";
+
+    const fileInput = document.getElementById("lesson-file");
+    const difficulty = document.getElementById("difficulty")?.value || "medium";
+    const totalQuestions = _toInt(document.getElementById("question-count")?.value, 10);
+    const selectedTypes = getSelectedQuestionTypes();
+    const distribution = buildDistribution();
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+      message.className = "message error";
+      message.textContent = "Please upload a lesson file.";
+      return;
+    }
+
+    if (!selectedTypes.length) {
+      message.className = "message error";
+      message.textContent = "Please select at least one question type.";
+      return;
+    }
+
+    if (!distribution.length) {
+      message.className = "message error";
+      message.textContent = "Please enter a valid question distribution.";
+      return;
+    }
+
+    const distributionTotal = distribution.reduce((sum, [, count]) => sum + count, 0);
+    if (distributionTotal !== totalQuestions) {
+      message.className = "message error";
+      message.textContent = "The total distribution must match the number of questions.";
+      return;
+    }
+
+    try {
+      const text = await extractTextFromFile(file);
+      const definitions = extractDefinitions(text, difficulty);
+
+      if (!definitions.length) {
+        message.className = "message error";
+        message.textContent = "No suitable definition sentences were found. Use lesson content with clear 'X is Y' statements.";
+        renderQuizPreview(null);
+        return;
+      }
+
+      const questions = generateByDistribution(definitions, difficulty, distribution);
+
+      const session = getTeacherSession();
+      const quiz = {
+        quizId: `quiz_${Date.now()}`,
+        quizCode: generateQuizCode(),
+        title: file.name,
+        sourceFileName: file.name,
+        difficulty,
+        questionCount: questions.length,
+        teacherUsername: session?.username || "unknown",
+        questionTypes: selectedTypes,
+        questions,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveQuiz(quiz);
+      renderQuizPreview(quiz);
+
+      message.className = "message success";
+      message.textContent = `Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
+    } catch (error) {
+      message.className = "message error";
+      message.textContent = error.message || "An error occurred while generating the quiz.";
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   handleTeacherRegister();
   handleTeacherLogin();
-  protectTeacherDashboard();
+  protectTeacherPages();
+  handleQuizGenerator();
 });
