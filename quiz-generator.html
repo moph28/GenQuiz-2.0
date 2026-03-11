@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Generator | GenQuiz</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="dashboard-layout">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+
+<div class="sidebar-brand">
+<div class="brand-icon small">GQ</div>
+<div>
+<h2>GenQuiz</h2>
+<p>Teacher Panel</p>
+</div>
+</div>
+
+<nav class="sidebar-nav">
+
+<a class="nav-item" href="teacher-dashboard.html">Dashboard</a>
+
+<a class="nav-item active" href="quiz-generator.html">
+Quiz Generator
+</a>
+
+<a class="nav-item" href="#">
+Quiz Library
+</a>
+
+<a class="nav-item" href="#">
+Results
+</a>
+
+</nav>
+
+<button id="logout-btn" class="sidebar-back">
+Logout
+</button>
+
+</aside>
+
+<!-- Main Content -->
+<section class="dashboard-main">
+
+<header class="dashboard-header">
+
+<div>
+<p class="eyebrow">Quiz Generator</p>
+<h1>Create a New Quiz</h1>
+</div>
+
+</header>
+
+<!-- Generator Card -->
+
+<div class="panel">
+
+<h2>Upload Lesson Material</h2>
+
+<p class="text-muted">
+Upload a lesson file and GenQuiz will generate questions automatically.
+</p>
+
+<br>
+
+<label class="form-label">
+Upload File
+</label>
+
+<input
+type="file"
+id="lesson-file"
+class="form-input"
+/>
+
+<p class="hint-text">
+Supported files: TXT, PDF, DOCX
+</p>
+
+<br>
+
+<h2>Question Setup</h2>
+
+<div class="form-grid">
+
+<label>
+<input type="checkbox" value="mcq" checked>
+Multiple Choice
+</label>
+
+<label>
+<input type="checkbox" value="tf" checked>
+True or False
+</label>
+
+<label>
+<input type="checkbox" value="id" checked>
+Identification
+</label>
+
+</div>
+
+<br>
+
+<h2>Difficulty</h2>
+
+<select class="form-input">
+
+<option>Easy</option>
+<option selected>Medium</option>
+<option>Hard</option>
+
+</select>
+
+<br><br>
+
+<h2>Number of Questions</h2>
+
+<input
+type="number"
+value="10"
+min="5"
+max="50"
+class="form-input"
+/>
+
+<br><br>
+
+<button class="primary-btn">
+
+Generate Quiz
+
+</button>
+
+</div>
+
+</section>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+  </html>
