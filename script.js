@@ -360,10 +360,7 @@ async function readPdfFile(file) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
 
-    const pageText = content.items
-      .map((item) => item.str || "")
-      .join(" ");
-
+    const pageText = content.items.map((item) => item.str || "").join(" ");
     text += " " + pageText;
   }
 
@@ -563,8 +560,7 @@ function handleQuizGenerator() {
 
       if (!text || !text.trim()) {
         message.className = "message error";
-        message.textContent =
-          "No readable text was extracted from the file.";
+        message.textContent = "No readable text was extracted from the file.";
         renderQuizPreview(null);
         return;
       }
@@ -585,8 +581,14 @@ function handleQuizGenerator() {
         distribution
       );
 
-      const session = getTeacherSession();
+      if (!questions.length) {
+        message.className = "message error";
+        message.textContent = "No questions were generated.";
+        renderQuizPreview(null);
+        return;
+      }
 
+      const session = getTeacherSession();
       const quizTitle = file.name.replace(/\.[^/.]+$/, "");
 
       const quiz = {
@@ -608,7 +610,6 @@ function handleQuizGenerator() {
       message.className = "message success";
       message.textContent = `Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
     } catch (error) {
-      console.error("Quiz generation error:", error);
       message.className = "message error";
       message.textContent =
         error.message || "An error occurred while generating the quiz.";
