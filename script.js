@@ -125,31 +125,33 @@ function getDifficultyRules(difficulty) {
 }
 
 function extractDefinitions(text, difficulty) {
-  const rules = getDifficultyRules(difficulty);
   const sentences = splitSentences(text);
   const definitions = [];
 
   for (const sentence of sentences) {
-    const lowered = sentence.toLowerCase();
-    const isCount = (lowered.match(/\sis\s/g) || []).length;
-    const areCount = (lowered.match(/\sare\s/g) || []).length;
+    const cleanSentence = normalizeSpaces(sentence).replace(/[.]+$/, "");
+    const lowered = cleanSentence.toLowerCase();
 
-    if (isCount + areCount !== 1) continue;
-    if (sentence.length < rules.minLen || sentence.length > rules.maxLen) continue;
+    let parts = null;
 
-    let parts;
-    if (/\sis\s/i.test(sentence)) {
-      parts = sentence.split(/\bis\b/i);
-    } else {
-      parts = sentence.split(/\bare\b/i);
+    if (lowered.includes(" is ")) {
+      parts = cleanSentence.split(/\bis\b/i);
+    } else if (lowered.includes(" are ")) {
+      parts = cleanSentence.split(/\bare\b/i);
+    } else if (lowered.includes(" refers to ")) {
+      parts = cleanSentence.split(/\brefers to\b/i);
+    } else if (lowered.includes(" means ")) {
+      parts = cleanSentence.split(/\bmeans\b/i);
     }
 
     if (!parts || parts.length < 2) continue;
 
     const term = cleanTerm(parts[0]);
-    const definition = normalizeSpaces(parts.slice(1).join(" ")).replace(/[.]+$/, "");
+    const definition = normalizeSpaces(parts.slice(1).join(" "));
 
-    if (term.length < 2 || definition.length < 8) continue;
+    if (!term || !definition) continue;
+    if (term.length < 2) continue;
+    if (definition.length < 5) continue;
 
     definitions.push({ term, definition });
   }
@@ -614,91 +616,101 @@ function handleQuizGenerator() {
       const quizTitle = file.name.replace(/\.[^/.]+$/, "");
 
 function handleQuizGenerator(){
+function handleQuizGenerator() {
+  const form = document.getElementById("quiz-generator-form");
+  const message = document.getElementById("generator-message");
 
-const form=document.getElementById("quiz-generator-form");
-const message=document.getElementById("generator-message");
+  if (!form || !message) return;
 
-if(!form||!message) return;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-form.addEventListener("submit",async(e)=>{
+    const file = document.getElementById("lesson-file")?.files?.[0];
+    const difficulty = document.getElementById("difficulty")?.value || "medium";
+    const totalQuestions = _toInt(
+      document.getElementById("question-count")?.value,
+      0
+    );
 
-e.preventDefault();
+    const distribution = buildDistribution();
+    const selectedTypes = getSelectedQuestionTypes();
 
-const file=document.getElementById("lesson-file")?.files?.[0];
-const difficulty=document.getElementById("difficulty")?.value||"medium";
-const totalQuestions=_toInt(document.getElementById("question-count")?.value,0);
+    if (!file) {
+      message.className = "message error";
+      message.textContent = "Please upload a lesson file.";
+      return;
+    }
 
-const distribution=buildDistribution();
+    if (!selectedTypes.length) {
+      message.className = "message error";
+      message.textContent = "Please select at least one question type.";
+      return;
+    }
 
-const error=validateDistribution(totalQuestions,distribution);
+    const validationError = validateDistribution(totalQuestions, distribution);
+    if (validationError) {
+      message.className = "message error";
+      message.textContent = validationError;
+      return;
+    }
 
-if(error){
-message.className="message error";
-message.textContent=error;
-return;
-}
+    try {
+      message.className = "message";
+      message.textContent = "Reading file...";
 
-if(!file){
-message.className="message error";
-message.textContent="Please upload a lesson file.";
-return;
-}
+      const text = await extractTextFromFile(file);
 
-try{
+      if (!text || !text.trim()) {
+        message.className = "message error";
+        message.textContent = "No readable text was extracted from the file.";
+        renderQuizPreview(null);
+        return;
+      }
 
-const text=await extractTextFromFile(file);
+      const definitions = extractDefinitions(text, difficulty);
 
-if(!text||!text.trim()){
-message.className="message error";
-message.textContent="No readable text was extracted from the file.";
-return;
-}
+      if (!definitions.length) {
+        message.className = "message error";
+        message.textContent =
+          "No definition sentences were detected.";
+        renderQuizPreview(null);
+        return;
+      }
 
-const definitions=extractDefinitions(text,difficulty);
+      const questions = generateByDistribution(definitions, difficulty, distribution);
 
-if(!definitions.length){
-message.className="message error";
-message.textContent="No definition sentences detected.";
-return;
-}
+      if (!questions.length) {
+        message.className = "message error";
+        message.textContent = "No questions were generated.";
+        renderQuizPreview(null);
+        return;
+      }
 
-const questions=generateByDistribution(definitions,difficulty,distribution);
+      const session = getTeacherSession();
 
-if(!questions.length){
-message.className="message error";
-message.textContent="No questions generated.";
-return;
-}
+      const quiz = {
+        quizId: `quiz_${Date.now()}`,
+        quizCode: generateQuizCode(),
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        sourceFileName: file.name,
+        teacherUsername: session?.username || "unknown",
+        difficulty,
+        questionTypes: selectedTypes,
+        questionCount: questions.length,
+        questions,
+        createdAt: new Date().toISOString(),
+      };
 
-const session=getTeacherSession();
+      saveQuiz(quiz);
+      renderQuizPreview(quiz);
 
-const quiz={
-quizId:`quiz_${Date.now()}`,
-quizCode:generateQuizCode(),
-title:file.name.replace(/\.[^/.]+$/,""),
-teacherUsername:session?.username||"unknown",
-difficulty,
-questionCount:questions.length,
-questions,
-createdAt:new Date().toISOString()
-};
-
-saveQuiz(quiz);
-
-renderQuizPreview(quiz);
-
-message.className="message success";
-message.textContent=`Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
-
-}catch(err){
-
-message.className="message error";
-message.textContent="Error generating quiz.";
-
-}
-
-});
-
+      message.className = "message success";
+      message.textContent = `Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
+    } catch (err) {
+      message.className = "message error";
+      message.textContent = err.message || "Error generating quiz.";
+    }
+  });
 }
 
 function handleStudentAccess() {
