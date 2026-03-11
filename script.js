@@ -613,30 +613,92 @@ function handleQuizGenerator() {
       const session = getTeacherSession();
       const quizTitle = file.name.replace(/\.[^/.]+$/, "");
 
-      const quiz = {
-        quizId: `quiz_${Date.now()}`,
-        quizCode: generateQuizCode(),
-        title: quizTitle,
-        sourceFileName: file.name,
-        teacherUsername: session?.username || "unknown",
-        difficulty,
-        questionTypes: selectedTypes,
-        questionCount: questions.length,
-        questions,
-        createdAt: new Date().toISOString(),
-      };
+function handleQuizGenerator(){
 
-      saveQuiz(quiz);
-      renderQuizPreview(quiz);
+const form=document.getElementById("quiz-generator-form");
+const message=document.getElementById("generator-message");
 
-      message.className = "message success";
-      message.textContent = `Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
-    } catch (error) {
-      message.className = "message error";
-      message.textContent =
-        error.message || "An error occurred while generating the quiz.";
-    }
-  });
+if(!form||!message) return;
+
+form.addEventListener("submit",async(e)=>{
+
+e.preventDefault();
+
+const file=document.getElementById("lesson-file")?.files?.[0];
+const difficulty=document.getElementById("difficulty")?.value||"medium";
+const totalQuestions=_toInt(document.getElementById("question-count")?.value,0);
+
+const distribution=buildDistribution();
+
+const error=validateDistribution(totalQuestions,distribution);
+
+if(error){
+message.className="message error";
+message.textContent=error;
+return;
+}
+
+if(!file){
+message.className="message error";
+message.textContent="Please upload a lesson file.";
+return;
+}
+
+try{
+
+const text=await extractTextFromFile(file);
+
+if(!text||!text.trim()){
+message.className="message error";
+message.textContent="No readable text was extracted from the file.";
+return;
+}
+
+const definitions=extractDefinitions(text,difficulty);
+
+if(!definitions.length){
+message.className="message error";
+message.textContent="No definition sentences detected.";
+return;
+}
+
+const questions=generateByDistribution(definitions,difficulty,distribution);
+
+if(!questions.length){
+message.className="message error";
+message.textContent="No questions generated.";
+return;
+}
+
+const session=getTeacherSession();
+
+const quiz={
+quizId:`quiz_${Date.now()}`,
+quizCode:generateQuizCode(),
+title:file.name.replace(/\.[^/.]+$/,""),
+teacherUsername:session?.username||"unknown",
+difficulty,
+questionCount:questions.length,
+questions,
+createdAt:new Date().toISOString()
+};
+
+saveQuiz(quiz);
+
+renderQuizPreview(quiz);
+
+message.className="message success";
+message.textContent=`Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
+
+}catch(err){
+
+message.className="message error";
+message.textContent="Error generating quiz.";
+
+}
+
+});
+
 }
 
 function handleStudentAccess() {
