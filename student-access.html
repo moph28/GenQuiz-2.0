@@ -13,14 +13,31 @@
         <div class="brand-icon small">GQ</div>
         <div>
           <h1 class="auth-title">Student Access</h1>
-          <p class="auth-subtitle">Student username and quiz code module will be built next.</p>
+          <p class="auth-subtitle">Enter your username and quiz code to start the quiz.</p>
         </div>
       </div>
 
-      <div class="button-stack">
-        <a class="primary-btn text-center" href="index.html">Back to Role Selection</a>
-      </div>
+      <form id="student-access-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="student-username">Username</label>
+          <input id="student-username" type="text" placeholder="Enter username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="student-quiz-code">Quiz Code</label>
+          <input id="student-quiz-code" type="text" placeholder="Enter quiz code" required />
+        </div>
+
+        <p id="student-access-message" class="message" aria-live="polite"></p>
+
+        <div class="button-stack">
+          <button class="primary-btn" type="submit">Start Quiz</button>
+          <a class="secondary-btn" href="index.html">Back to Role Selection</a>
+        </div>
+      </form>
     </section>
   </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
