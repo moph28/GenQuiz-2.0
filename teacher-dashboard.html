@@ -18,10 +18,10 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" type="button">Dashboard</button>
+        <a class="nav-item active" href="teacher-dashboard.html">Dashboard</a>
         <a class="nav-item" href="quiz-generator.html">Quiz Generator</a>
-        <button class="nav-item" type="button">Quiz Library</button>
-        <button class="nav-item" type="button">Results</button>
+        <a class="nav-item" href="#">Quiz Library</a>
+        <a class="nav-item" href="#">Results</a>
       </nav>
 
       <button id="logout-btn" class="sidebar-back" type="button">Log Out</button>
@@ -39,51 +39,34 @@
       <section class="stats-grid">
         <article class="stat-card">
           <p>Total Quizzes</p>
-          <h3>--</h3>
+          <h3 id="stat-total-quizzes">0</h3>
           <span>Saved quizzes</span>
         </article>
+
         <article class="stat-card">
           <p>Total Attempts</p>
-          <h3>--</h3>
+          <h3 id="stat-total-attempts">0</h3>
           <span>Student submissions</span>
         </article>
+
         <article class="stat-card">
-          <p>Question Types</p>
-          <h3>3</h3>
-          <span>MCQ, TF, ID</span>
+          <p>Latest Quiz Code</p>
+          <h3 id="stat-latest-quiz-code">--</h3>
+          <span>Most recent generated quiz</span>
         </article>
+
         <article class="stat-card">
           <p>Status</p>
-          <h3>Prototype</h3>
-          <span>Authentication active</span>
+          <h3 id="stat-system-status">Active</h3>
+          <span>Dashboard connected</span>
         </article>
       </section>
 
-      <section class="content-grid">
+      <section class="content-grid dashboard-grid-2">
         <article class="panel">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">Quick Start</p>
-              <h2>Teacher Access Confirmed</h2>
-            </div>
-          </div>
-
-          <div class="quick-list">
-            <div class="quick-item">
-              <h3>Next Build Step</h3>
-              <p>The next module to connect is the Quiz Generator page with file upload and rule-based question creation.</p>
-            </div>
-            <div class="quick-item">
-              <h3>Current State</h3>
-              <p>Teacher registration, login, session handling, and dashboard protection are already working.</p>
-            </div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Account Information</p>
+              <p class="eyebrow">Overview</p>
               <h2>Current Teacher Session</h2>
             </div>
           </div>
@@ -92,6 +75,103 @@
             <p><strong>Username:</strong> <span id="teacher-username-display">--</span></p>
             <p><strong>Role:</strong> Teacher</p>
             <p><strong>Access:</strong> Authorized</p>
+          </div>
+
+          <div class="quick-list top-gap">
+            <div class="quick-item">
+              <h3>Next Action</h3>
+              <p>Create a new quiz from lesson materials using the Quiz Generator page.</p>
+            </div>
+            <div class="quick-item">
+              <h3>System Scope</h3>
+              <p>Teachers generate and save quizzes while students access quizzes using a username and quiz code.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Quick Summary</p>
+              <h2>Performance Snapshot</h2>
+            </div>
+          </div>
+
+          <div class="summary-list">
+            <div class="summary-row">
+              <span>Average Student Score</span>
+              <strong id="summary-average-score">--</strong>
+            </div>
+            <div class="summary-row">
+              <span>Highest Score</span>
+              <strong id="summary-highest-score">--</strong>
+            </div>
+            <div class="summary-row">
+              <span>Lowest Score</span>
+              <strong id="summary-lowest-score">--</strong>
+            </div>
+            <div class="summary-row">
+              <span>Most Recent Student</span>
+              <strong id="summary-recent-student">--</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="dashboard-stack">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Saved Quizzes</p>
+              <h2>Recent Quizzes</h2>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Quiz Code</th>
+                  <th>Questions</th>
+                  <th>Difficulty</th>
+                  <th>Date Created</th>
+                </tr>
+              </thead>
+              <tbody id="recent-quizzes-body">
+                <tr>
+                  <td colspan="5" class="empty-cell">No quizzes saved yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Student Results</p>
+              <h2>Recent Quiz Attempts</h2>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student Username</th>
+                  <th>Quiz Code</th>
+                  <th>Score</th>
+                  <th>Percentage</th>
+                  <th>Submitted At</th>
+                </tr>
+              </thead>
+              <tbody id="recent-results-body">
+                <tr>
+                  <td colspan="5" class="empty-cell">No student results yet.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </article>
       </section>
