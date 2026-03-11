@@ -60,7 +60,10 @@ function getStudentAccess() {
 }
 
 function saveActiveStudentQuiz(payload) {
-  localStorage.setItem(STORAGE_KEYS.activeStudentQuiz, JSON.stringify(payload));
+  localStorage.setItem(
+    STORAGE_KEYS.activeStudentQuiz,
+    JSON.stringify(payload)
+  );
 }
 
 function getActiveStudentQuiz() {
@@ -69,11 +72,15 @@ function getActiveStudentQuiz() {
 }
 
 function saveStudentResult(result) {
-  const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
-  const results = resultsRaw ? JSON.parse(resultsRaw) : [];
+  const raw = localStorage.getItem(STORAGE_KEYS.studentResults);
+  const results = raw ? JSON.parse(raw) : [];
   results.push(result);
+
   localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(results));
-  localStorage.setItem(STORAGE_KEYS.activeStudentResult, JSON.stringify(result));
+  localStorage.setItem(
+    STORAGE_KEYS.activeStudentResult,
+    JSON.stringify(result)
+  );
 }
 
 function getActiveStudentResult() {
@@ -103,9 +110,7 @@ function splitSentences(text) {
 
 function cleanTerm(term) {
   return normalizeSpaces(
-    term
-      .replace(/^(the|a|an)\s+/i, "")
-      .replace(/[,:;]+$/g, "")
+    term.replace(/^(the|a|an)\s+/i, "").replace(/[,:;]+$/g, "")
   );
 }
 
@@ -162,11 +167,14 @@ function makeIdentificationQuestion(definitionObj) {
 
 function makeTrueFalseQuestion(definitionObj, termPool, tfFalseRate) {
   const makeFalse = Math.random() * 100 < tfFalseRate;
+
   if (makeFalse && termPool.length > 1) {
     const wrongChoices = termPool.filter(
       (term) => term.toLowerCase() !== definitionObj.term.toLowerCase()
     );
-    const wrongTerm = wrongChoices[Math.floor(Math.random() * wrongChoices.length)];
+    const wrongTerm =
+      wrongChoices[Math.floor(Math.random() * wrongChoices.length)];
+
     return {
       type: "True/False",
       question: `True or False: ${wrongTerm} is ${definitionObj.definition}.`,
@@ -194,7 +202,9 @@ function shuffleArray(items) {
 
 function makeMultipleChoiceQuestion(definitionObj, termPool) {
   const distractors = shuffleArray(
-    termPool.filter((term) => term.toLowerCase() !== definitionObj.term.toLowerCase())
+    termPool.filter(
+      (term) => term.toLowerCase() !== definitionObj.term.toLowerCase()
+    )
   ).slice(0, 3);
 
   const options = shuffleArray([definitionObj.term, ...distractors]);
@@ -230,6 +240,7 @@ function buildDistribution() {
   if (mcqCount > 0) distribution.push(["mcq", mcqCount]);
   if (tfCount > 0) distribution.push(["tf", tfCount]);
   if (idCount > 0) distribution.push(["id", idCount]);
+
   return distribution;
 }
 
@@ -259,7 +270,9 @@ function generateByDistribution(definitions, difficulty, distribution) {
       if (type === "mcq") {
         questions.push(makeMultipleChoiceQuestion(definitionObj, termPool));
       } else if (type === "tf") {
-        questions.push(makeTrueFalseQuestion(definitionObj, termPool, rules.tfFalseRate));
+        questions.push(
+          makeTrueFalseQuestion(definitionObj, termPool, rules.tfFalseRate)
+        );
       } else if (type === "id") {
         questions.push(makeIdentificationQuestion(definitionObj));
       }
@@ -322,7 +335,9 @@ async function extractTextFromFile(file) {
   }
 
   if (extension === "pdf" || extension === "docx") {
-    throw new Error("PDF and DOCX support will be added in the next implementation step. Please use TXT first.");
+    throw new Error(
+      "PDF and DOCX support will be added in the next implementation step. Please use TXT first."
+    );
   }
 
   throw new Error("Unsupported file type. Please upload a TXT file.");
@@ -391,7 +406,9 @@ function handleTeacherLogin() {
       return;
     }
 
-    const isValid = account.username === username && account.password === password;
+    const isValid =
+      account.username === username &&
+      account.password === password;
 
     if (!isValid) {
       message.className = "message error";
@@ -549,6 +566,7 @@ function handleStudentAccess() {
       title: quiz.title,
       questions: quiz.questions,
       answers: {},
+      currentIndex: 0,
     });
 
     message.className = "message success";
@@ -588,7 +606,7 @@ function renderStudentQuestion(payload) {
       <div class="answer-group">
         ${options
           .map(
-            (option, index) => `
+            (option) => `
               <label class="answer-option">
                 <input
                   type="radio"
@@ -638,7 +656,134 @@ function captureCurrentStudentAnswer(payload) {
     payload.answers[payload.currentIndex] = selected ? selected.value : "";
   } else {
     const input = document.getElementById("student-identification-answer");
-    payload.answers[payload.currentIndex] = input ? input.value.trim() : "";
+    payload.answers[payload.currentIndex] =
+      input ? input.value.trim() : "";
   }
 
   saveActiveStudentQuiz(payload);
+}
+
+function computeStudentScore(payload) {
+  let score = 0;
+
+  payload.questions.forEach((question, index) => {
+    const studentAnswer = String(payload.answers[index] || "").trim();
+    const correctAnswer = String(question.answer || "").trim();
+
+    if (question.type === "Identification") {
+      if (studentAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+        score += 1;
+      }
+    } else if (studentAnswer === correctAnswer) {
+      score += 1;
+    }
+  });
+
+  return score;
+}
+
+function handleStudentQuiz() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "student-quiz.html") return;
+
+  const payload = getActiveStudentQuiz();
+  if (!payload || !payload.questions || !payload.questions.length) {
+    redirect("student-access.html");
+    return;
+  }
+
+  if (typeof payload.currentIndex !== "number") {
+    payload.currentIndex = 0;
+  }
+  if (!payload.answers) {
+    payload.answers = {};
+  }
+
+  renderStudentQuestion(payload);
+
+  const prevBtn = document.getElementById("prev-question-btn");
+  const nextBtn = document.getElementById("next-question-btn");
+  const submitBtn = document.getElementById("submit-quiz-btn");
+  const message = document.getElementById("student-quiz-message");
+
+  prevBtn.addEventListener("click", () => {
+    captureCurrentStudentAnswer(payload);
+    if (payload.currentIndex > 0) {
+      payload.currentIndex -= 1;
+      saveActiveStudentQuiz(payload);
+      renderStudentQuestion(payload);
+      message.className = "message";
+      message.textContent = "";
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    captureCurrentStudentAnswer(payload);
+    if (payload.currentIndex < payload.questions.length - 1) {
+      payload.currentIndex += 1;
+      saveActiveStudentQuiz(payload);
+      renderStudentQuestion(payload);
+      message.className = "message";
+      message.textContent = "";
+    }
+  });
+
+  submitBtn.addEventListener("click", () => {
+    captureCurrentStudentAnswer(payload);
+
+    const unanswered = payload.questions.some((_, index) => {
+      const value = String(payload.answers[index] || "").trim();
+      return !value;
+    });
+
+    if (unanswered) {
+      message.className = "message error";
+      message.textContent = "Please answer all questions before submitting.";
+      return;
+    }
+
+    const score = computeStudentScore(payload);
+    const totalItems = payload.questions.length;
+    const percentage = Math.round((score / totalItems) * 100);
+
+    const result = {
+      resultId: `result_${Date.now()}`,
+      studentUsername: payload.username,
+      quizCode: payload.quizCode,
+      quizId: payload.quizId,
+      score,
+      totalItems,
+      percentage,
+      submittedAt: new Date().toISOString(),
+    };
+
+    saveStudentResult(result);
+    redirect("student-result.html");
+  });
+}
+
+function handleStudentResultPage() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "student-result.html") return;
+
+  const result = getActiveStudentResult();
+  if (!result) {
+    redirect("student-access.html");
+    return;
+  }
+  document.getElementById("result-student-username").textContent = result.studentUsername;
+  document.getElementById("result-quiz-code").textContent = result.quizCode;
+  document.getElementById("result-score").textContent = result.score;
+  document.getElementById("result-total").textContent = result.totalItems;
+  document.getElementById("result-percentage").textContent = `${result.percentage}%`;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  handleTeacherRegister();
+  handleTeacherLogin();
+  protectTeacherPages();
+  handleQuizGenerator();
+  handleStudentAccess();
+  handleStudentQuiz();
+  handleStudentResultPage();
+});
