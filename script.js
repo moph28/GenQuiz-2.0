@@ -1416,6 +1416,55 @@ function bindQuizLibraryActions(filteredQuizzes) {
   });
 
 });
+      function populateTeacherDashboard(){
+
+const currentPage = window.location.pathname.split("/").pop();
+
+if(currentPage !== "teacher-dashboard.html") return;
+
+const session = getTeacherSession();
+
+if(!session) return;
+
+const quizzes = getSavedQuizzes()
+.filter(q => q.teacherUsername === session.username);
+
+const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
+const results = resultsRaw ? JSON.parse(resultsRaw) : [];
+
+const teacherResults = results.filter(r => r.teacherUsername === session.username);
+
+const totalQuizzes = quizzes.length;
+
+const totalAttempts = teacherResults.length;
+
+const students = new Set(teacherResults.map(r => r.studentUsername));
+
+const totalStudents = students.size;
+
+let averageScore = 0;
+
+if(totalAttempts > 0){
+
+let scoreSum = 0;
+
+teacherResults.forEach(r=>{
+scoreSum += (r.score / r.total) * 100;
+});
+
+averageScore = Math.round(scoreSum / totalAttempts);
+
+}
+
+document.getElementById("stat-total-quizzes").textContent = totalQuizzes;
+
+document.getElementById("stat-total-students").textContent = totalStudents;
+
+document.getElementById("stat-total-attempts").textContent = totalAttempts;
+
+document.getElementById("stat-average-score").textContent = `${averageScore}%`;
+
+      }
 document.addEventListener("DOMContentLoaded", () => {
 
 handleTeacherRegister();
