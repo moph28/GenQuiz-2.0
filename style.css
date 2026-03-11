@@ -831,3 +831,25 @@ grid-template-columns:1fr;
 .top-gap {
   margin-top: 24px;
 }
+.preview-list{
+display:grid;
+gap:16px;
+margin-top:20px;
+}
+
+.preview-question{
+border:1px solid var(--line);
+padding:14px;
+border-radius:12px;
+background:rgba(255,255,255,0.02);
+}
+
+.preview-options{
+margin-top:8px;
+padding-left:18px;
+}
+
+.preview-answer{
+margin-top:8px;
+color:#a7f3d0;
+}
