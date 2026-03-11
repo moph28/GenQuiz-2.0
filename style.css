@@ -473,3 +473,57 @@ select {
     display: grid;
   }
 }
+.helper-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.preview-box {
+  display: grid;
+  gap: 14px;
+}
+
+.preview-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.preview-meta {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.preview-meta p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.preview-meta p:last-child {
+  margin-bottom: 0;
+}
+
+.preview-question {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.preview-question h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.preview-question p,
+.preview-question li {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.preview-question ul {
+  margin: 10px 0 0 18px;
+  padding: 0;
+}
