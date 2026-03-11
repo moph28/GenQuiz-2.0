@@ -293,16 +293,19 @@ function renderQuizPreview(quiz) {
 
   const questionMarkup = quiz.questions
     .map((item, index) => {
+
       const optionsMarkup = item.options
-        ? `<ul>${item.options.map((option) => `<li>${option}</li>`).join("")}</ul>`
+        ? `<ul class="preview-options">
+            ${item.options.map(o => `<li>${o}</li>`).join("")}
+          </ul>`
         : "";
 
       return `
-        <article class="preview-question">
-          <h3>${index + 1}. [${item.type}] ${item.question}</h3>
-          ${optionsMarkup}
-          <p><strong>Answer:</strong> ${item.answer}</p>
-        </article>
+      <div class="preview-question">
+        <h4>${index + 1}. ${item.question}</h4>
+        ${optionsMarkup}
+        <p class="preview-answer"><strong>Answer:</strong> ${item.answer}</p>
+      </div>
       `;
     })
     .join("");
@@ -312,9 +315,12 @@ function renderQuizPreview(quiz) {
       <p><strong>Quiz Code:</strong> ${quiz.quizCode}</p>
       <p><strong>Title:</strong> ${quiz.title}</p>
       <p><strong>Difficulty:</strong> ${quiz.difficulty}</p>
-      <p><strong>Total Questions:</strong> ${quiz.questions.length}</p>
+      <p><strong>Questions:</strong> ${quiz.questions.length}</p>
     </div>
-    ${questionMarkup}
+
+    <div class="preview-list">
+      ${questionMarkup}
+    </div>
   `;
 }
 
@@ -507,18 +513,25 @@ function handleQuizGenerator() {
       const questions = generateByDistribution(definitions, difficulty, distribution);
 
       const session = getTeacherSession();
-      const quiz = {
-        quizId: `quiz_${Date.now()}`,
-        quizCode: generateQuizCode(),
-        title: file.name,
-        sourceFileName: file.name,
-        difficulty,
-        questionCount: questions.length,
-        teacherUsername: session?.username || "unknown",
-        questionTypes: selectedTypes,
-        questions,
-        createdAt: new Date().toISOString(),
-      };
+      const quizTitle = file.name.replace(/\.[^/.]+$/, "");
+
+const quiz = {
+  quizId: `quiz_${Date.now()}`,
+  quizCode: generateQuizCode(),
+
+  title: quizTitle,
+  sourceFileName: file.name,
+
+  teacherUsername: session?.username || "unknown",
+
+  difficulty: difficulty,
+  questionTypes: selectedTypes,
+
+  questionCount: questions.length,
+  questions: questions,
+
+  createdAt: new Date().toISOString(),
+};
 
       saveQuiz(quiz);
       renderQuizPreview(quiz);
