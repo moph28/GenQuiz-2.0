@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon small">GQ</div>
+        <div>
+          <h2>GenQuiz</h2>
+          <p>Teacher Panel</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" type="button">Dashboard</button>
+        <button class="nav-item" type="button">Quiz Generator</button>
+        <button class="nav-item" type="button">Quiz Library</button>
+        <button class="nav-item" type="button">Results</button>
+      </nav>
+
+      <button id="logout-btn" class="sidebar-back" type="button">Log Out</button>
+    </aside>
+
+    <section class="dashboard-main">
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">Teacher Dashboard</p>
+          <h1 id="teacher-welcome">Welcome, Teacher</h1>
+        </div>
+        <div class="header-chip">GenQuiz 2.0</div>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <p>Total Quizzes</p>
+          <h3>--</h3>
+          <span>Saved quizzes</span>
+        </article>
+        <article class="stat-card">
+          <p>Total Attempts</p>
+          <h3>--</h3>
+          <span>Student submissions</span>
+        </article>
+        <article class="stat-card">
+          <p>Question Types</p>
+          <h3>3</h3>
+          <span>MCQ, TF, ID</span>
+        </article>
+        <article class="stat-card">
+          <p>Status</p>
+          <h3>Prototype</h3>
+          <span>Authentication active</span>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Quick Start</p>
+              <h2>Teacher Access Confirmed</h2>
+            </div>
+          </div>
+
+          <div class="quick-list">
+            <div class="quick-item">
+              <h3>Next Build Step</h3>
+              <p>The next module to connect is the Quiz Generator page with file upload and rule-based question creation.</p>
+            </div>
+            <div class="quick-item">
+              <h3>Current State</h3>
+              <p>Teacher registration, login, session handling, and dashboard protection are already working.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Account Information</p>
+              <h2>Current Teacher Session</h2>
+            </div>
+          </div>
+
+          <div class="account-box">
+            <p><strong>Username:</strong> <span id="teacher-username-display">--</span></p>
+            <p><strong>Role:</strong> Teacher</p>
+            <p><strong>Access:</strong> Authorized</p>
+          </div>
+        </article>
+      </section>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
