@@ -1,35 +1,206 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GenQuiz</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-
-<div class="container">
-
-    <h1>GenQuiz</h1>
-    <p>Select your role</p>
-
-    <div class="roles">
-
-        <div class="card" onclick="selectRole('teacher')">
-            <h2>Teacher</h2>
-            <p>Create and manage quizzes</p>
+  <main id="app">
+    <!-- Landing -->
+    <section id="landing-view" class="view active">
+      <div class="landing-shell">
+        <div class="brand-block">
+          <div class="brand-icon">GQ</div>
+          <div>
+            <h1 class="brand-title">GenQuiz</h1>
+            <p class="brand-subtitle">Web-Based Quiz Generator for Teachers and Students</p>
+          </div>
         </div>
 
-        <div class="card" onclick="selectRole('student')">
-            <h2>Student</h2>
-            <p>Take quizzes and view results</p>
+        <div class="hero-copy">
+          <h2>Select your role</h2>
+          <p>Choose how you want to enter the system.</p>
         </div>
 
-    </div>
+        <div class="role-grid">
+          <button class="role-card" id="teacher-role-btn" type="button">
+            <div class="role-badge">Teacher</div>
+            <h3>Create and manage quizzes</h3>
+            <p>Upload lesson files, configure quiz settings, and generate assessments.</p>
+          </button>
 
-</div>
+          <button class="role-card" id="student-role-btn" type="button">
+            <div class="role-badge">Student</div>
+            <h3>Take quizzes and view results</h3>
+            <p>Answer generated quizzes directly in the browser and see your score.</p>
+          </button>
+        </div>
+      </div>
+    </section>
 
-<script src="script.js"></script>
+    <!-- Teacher Dashboard -->
+    <section id="teacher-view" class="view">
+      <div class="dashboard-layout">
+        <aside class="sidebar">
+          <div class="sidebar-brand">
+            <div class="brand-icon small">GQ</div>
+            <div>
+              <h2>GenQuiz</h2>
+              <p>Teacher Panel</p>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <button class="nav-item active" type="button">Dashboard</button>
+            <button class="nav-item" type="button">Quiz Generator</button>
+            <button class="nav-item" type="button">Quiz Library</button>
+            <button class="nav-item" type="button">Results</button>
+            <button class="nav-item" type="button">Settings</button>
+          </nav>
+
+          <button class="sidebar-back" id="teacher-back-btn" type="button">← Back to role selection</button>
+        </aside>
+
+        <section class="dashboard-main">
+          <header class="dashboard-header">
+            <div>
+              <p class="eyebrow">Teacher Dashboard</p>
+              <h1>Create and manage your quizzes</h1>
+            </div>
+            <div class="header-chip">GenQuiz 2.0</div>
+          </header>
+
+          <section class="stats-grid">
+            <article class="stat-card">
+              <p>Total Quizzes</p>
+              <h3>12</h3>
+              <span>Generated quizzes</span>
+            </article>
+            <article class="stat-card">
+              <p>Question Types</p>
+              <h3>3</h3>
+              <span>MCQ, TF, ID</span>
+            </article>
+            <article class="stat-card">
+              <p>File Support</p>
+              <h3>4</h3>
+              <span>TXT, PDF, DOCX, PPTX</span>
+            </article>
+            <article class="stat-card">
+              <p>Status</p>
+              <h3>Ready</h3>
+              <span>System online</span>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Core Feature</p>
+                  <h2>Quiz Generator</h2>
+                </div>
+              </div>
+
+              <form class="quiz-form" onsubmit="return false;">
+                <div class="form-group">
+                  <label for="lesson-file">Upload lesson file</label>
+                  <input id="lesson-file" type="file" />
+                </div>
+
+                <div class="form-group">
+                  <label>Question Types</label>
+                  <div class="checkbox-stack">
+                    <label><input type="checkbox" checked /> Multiple Choice</label>
+                    <label><input type="checkbox" checked /> True or False</label>
+                    <label><input type="checkbox" checked /> Identification</label>
+                  </div>
+                </div>
+
+                <div class="two-col">
+                  <div class="form-group">
+                    <label for="difficulty">Difficulty</label>
+                    <select id="difficulty">
+                      <option>Easy</option>
+                      <option selected>Medium</option>
+                      <option>Hard</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="question-count">Number of Questions</label>
+                    <input id="question-count" type="number" min="5" max="50" value="10" />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Question Distribution</label>
+                  <div class="distribution-grid">
+                    <label><span>MCQ</span><input type="number" min="0" value="5" /></label>
+                    <label><span>True/False</span><input type="number" min="0" value="3" /></label>
+                    <label><span>Identification</span><input type="number" min="0" value="2" /></label>
+                  </div>
+                </div>
+
+                <button class="primary-btn" type="button">Generate Quiz</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Quick Actions</p>
+                  <h2>System Overview</h2>
+                </div>
+              </div>
+
+              <div class="quick-list">
+                <div class="quick-item">
+                  <h3>Upload Lesson File</h3>
+                  <p>Import learning materials that will be used for rule-based quiz generation.</p>
+                </div>
+                <div class="quick-item">
+                  <h3>Generate Quiz</h3>
+                  <p>Create structured quiz items based on extracted lesson definitions.</p>
+                </div>
+                <div class="quick-item">
+                  <h3>Quiz Library</h3>
+                  <p>Store and review previously generated quizzes for later use.</p>
+                </div>
+                <div class="quick-item">
+                  <h3>Results</h3>
+                  <p>Track student scores and performance after quiz completion.</p>
+                </div>
+              </div>
+            </article>
+          </section>
+        </section>
+      </div>
+    </section>
+
+    <!-- Student View -->
+    <section id="student-view" class="view">
+      <div class="student-shell">
+        <div class="brand-block centered">
+          <div class="brand-icon">GQ</div>
+          <div>
+            <h1 class="brand-title">Student Access</h1>
+            <p class="brand-subtitle">Quiz interaction page will be built next.</p>
+          </div>
+        </div>
+
+        <div class="student-card">
+          <h2>Student Quiz Module</h2>
+          <p>This page will contain the quiz answering interface, timer, score, and result summary.</p>
+          <button class="primary-btn" id="student-back-btn" type="button">Back to role selection</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
