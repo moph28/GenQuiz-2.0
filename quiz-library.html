@@ -64,7 +64,7 @@
                 <th>Questions</th>
                 <th>Difficulty</th>
                 <th>Date Created</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="quiz-library-body">
@@ -78,6 +78,18 @@
         <div id="quiz-library-cards" class="library-card-list mobile-only">
           <div class="empty-state-card">No quizzes saved yet.</div>
         </div>
+      </section>
+
+      <section id="quiz-preview-panel" class="panel top-gap hidden">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Quiz Preview</p>
+            <h2 id="preview-quiz-title">Saved Quiz</h2>
+          </div>
+        </div>
+
+        <div id="quiz-preview-meta" class="preview-meta"></div>
+        <div id="quiz-preview-questions" class="preview-box"></div>
       </section>
     </section>
   </div>
