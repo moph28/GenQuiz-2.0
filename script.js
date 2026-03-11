@@ -777,7 +777,142 @@ function handleStudentResultPage() {
   document.getElementById("result-total").textContent = result.totalItems;
   document.getElementById("result-percentage").textContent = `${result.percentage}%`;
 }
+function getStudentResults() {
+  const raw = localStorage.getItem(STORAGE_KEYS.studentResults);
+  return raw ? JSON.parse(raw) : [];
+}
 
+function formatDateTime(value) {
+  if (!value) return "--";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+
+  return date.toLocaleString();
+}
+
+function renderRecentQuizzes(quizzes) {
+  const tbody = document.getElementById("recent-quizzes-body");
+  if (!tbody) return;
+
+  if (!quizzes.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty-cell">No quizzes saved yet.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = quizzes
+    .map(
+      (quiz) => `
+        <tr>
+          <td>${quiz.title || "--"}</td>
+          <td>${quiz.quizCode || "--"}</td>
+          <td>${quiz.questionCount ?? "--"}</td>
+          <td>${quiz.difficulty || "--"}</td>
+          <td>${formatDateTime(quiz.createdAt)}</td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function renderRecentResults(results) {
+  const tbody = document.getElementById("recent-results-body");
+  if (!tbody) return;
+
+  if (!results.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty-cell">No student results yet.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = results
+    .map(
+      (result) => `
+        <tr>
+          <td>${result.studentUsername || "--"}</td>
+          <td>${result.quizCode || "--"}</td>
+          <td>${result.score}/${result.totalItems}</td>
+          <td>${result.percentage}%</td>
+          <td>${formatDateTime(result.submittedAt)}</td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function populateTeacherDashboard() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "teacher-dashboard.html") return;
+
+  const session = getTeacherSession();
+  if (!session) return;
+
+  const allQuizzes = getSavedQuizzes();
+  const allResults = getStudentResults();
+
+  const teacherQuizzes = allQuizzes
+    .filter((quiz) => quiz.teacherUsername === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const teacherQuizCodes = new Set(teacherQuizzes.map((quiz) => quiz.quizCode));
+
+  const teacherResults = allResults
+    .filter((result) => teacherQuizCodes.has(result.quizCode))
+    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+  const totalQuizzesEl = document.getElementById("stat-total-quizzes");
+  const totalAttemptsEl = document.getElementById("stat-total-attempts");
+  const latestQuizCodeEl = document.getElementById("stat-latest-quiz-code");
+  const averageScoreEl = document.getElementById("summary-average-score");
+  const highestScoreEl = document.getElementById("summary-highest-score");
+  const lowestScoreEl = document.getElementById("summary-lowest-score");
+  const recentStudentEl = document.getElementById("summary-recent-student");
+
+  if (totalQuizzesEl) {
+    totalQuizzesEl.textContent = String(teacherQuizzes.length);
+  }
+
+  if (totalAttemptsEl) {
+    totalAttemptsEl.textContent = String(teacherResults.length);
+  }
+
+  if (latestQuizCodeEl) {
+    latestQuizCodeEl.textContent = teacherQuizzes.length
+      ? teacherQuizzes[0].quizCode
+      : "--";
+  }
+
+  if (teacherResults.length) {
+    const percentages = teacherResults.map((item) => Number(item.percentage) || 0);
+    const average =
+      Math.round(
+        percentages.reduce((sum, value) => sum + value, 0) / percentages.length
+      ) + "%";
+    const highest = Math.max(...percentages) + "%";
+    const lowest = Math.min(...percentages) + "%";
+    const recentStudent = teacherResults[0].studentUsername || "--";
+
+    if (averageScoreEl) averageScoreEl.textContent = average;
+    if (highestScoreEl) highestScoreEl.textContent = highest;
+    if (lowestScoreEl) lowestScoreEl.textContent = lowest;
+    if (recentStudentEl) recentStudentEl.textContent = recentStudent;
+  } else {
+    if (averageScoreEl) averageScoreEl.textContent = "--";
+    if (highestScoreEl) highestScoreEl.textContent = "--";
+    if (lowestScoreEl) lowestScoreEl.textContent = "--";
+    if (recentStudentEl) recentStudentEl.textContent = "--";
+  }
+
+  renderRecentQuizzes(teacherQuizzes.slice(0, 5));
+  renderRecentResults(teacherResults.slice(0, 5));
+}
 document.addEventListener("DOMContentLoaded", () => {
   handleTeacherRegister();
   handleTeacherLogin();
@@ -786,4 +921,5 @@ document.addEventListener("DOMContentLoaded", () => {
   handleStudentAccess();
   handleStudentQuiz();
   handleStudentResultPage();
+  populateTeacherDashboard();
 });
