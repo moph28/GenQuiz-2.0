@@ -361,10 +361,10 @@ async function readPdfFile(file) {
     const content = await page.getTextContent();
 
     const pageText = content.items
-      .map((item) => ("str" in item ? item.str : ""))
+      .map((item) => item.str || "")
       .join(" ");
 
-    text += ` ${pageText}`;
+    text += " " + pageText;
   }
 
   return normalizeSpaces(text);
@@ -397,7 +397,7 @@ async function extractTextFromFile(file) {
   }
 
   throw new Error("Unsupported file type. Please upload a TXT, PDF, or DOCX file.");
-                                   }
+}
 function handleTeacherRegister() {
   const form = document.getElementById("teacher-register-form");
   const message = document.getElementById("register-message");
@@ -508,17 +508,22 @@ function protectTeacherPages() {
 function handleQuizGenerator() {
   const form = document.getElementById("quiz-generator-form");
   const message = document.getElementById("generator-message");
+
   if (!form || !message) return;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     message.className = "message";
-    message.textContent = "";
+    message.textContent = "Generating quiz...";
 
     const fileInput = document.getElementById("lesson-file");
     const difficulty = document.getElementById("difficulty")?.value || "medium";
-    const totalQuestions = _toInt(document.getElementById("question-count")?.value, 10);
+    const totalQuestions = _toInt(
+      document.getElementById("question-count")?.value,
+      10
+    );
+
     const selectedTypes = getSelectedQuestionTypes();
     const distribution = buildDistribution();
     const file = fileInput?.files?.[0];
@@ -541,46 +546,61 @@ function handleQuizGenerator() {
       return;
     }
 
-    const distributionTotal = distribution.reduce((sum, [, count]) => sum + count, 0);
+    const distributionTotal = distribution.reduce(
+      (sum, [, count]) => sum + count,
+      0
+    );
+
     if (distributionTotal !== totalQuestions) {
       message.className = "message error";
-      message.textContent = "The total distribution must match the number of questions.";
+      message.textContent =
+        "The total distribution must match the number of questions.";
       return;
     }
 
     try {
       const text = await extractTextFromFile(file);
-      const definitions = extractDefinitions(text, difficulty);
 
-      if (!definitions.length) {
+      if (!text || !text.trim()) {
         message.className = "message error";
-        message.textContent = "No suitable definition sentences were found. Use lesson content with clear 'X is Y' statements.";
+        message.textContent =
+          "No readable text was extracted from the file.";
         renderQuizPreview(null);
         return;
       }
 
-      const questions = generateByDistribution(definitions, difficulty, distribution);
+      const definitions = extractDefinitions(text, difficulty);
+
+      if (!definitions.length) {
+        message.className = "message error";
+        message.textContent =
+          "No suitable definition sentences were found. Use lesson content with clear 'X is Y' statements.";
+        renderQuizPreview(null);
+        return;
+      }
+
+      const questions = generateByDistribution(
+        definitions,
+        difficulty,
+        distribution
+      );
 
       const session = getTeacherSession();
+
       const quizTitle = file.name.replace(/\.[^/.]+$/, "");
 
-const quiz = {
-  quizId: `quiz_${Date.now()}`,
-  quizCode: generateQuizCode(),
-
-  title: quizTitle,
-  sourceFileName: file.name,
-
-  teacherUsername: session?.username || "unknown",
-
-  difficulty: difficulty,
-  questionTypes: selectedTypes,
-
-  questionCount: questions.length,
-  questions: questions,
-
-  createdAt: new Date().toISOString(),
-};
+      const quiz = {
+        quizId: `quiz_${Date.now()}`,
+        quizCode: generateQuizCode(),
+        title: quizTitle,
+        sourceFileName: file.name,
+        teacherUsername: session?.username || "unknown",
+        difficulty,
+        questionTypes: selectedTypes,
+        questionCount: questions.length,
+        questions,
+        createdAt: new Date().toISOString(),
+      };
 
       saveQuiz(quiz);
       renderQuizPreview(quiz);
@@ -588,8 +608,10 @@ const quiz = {
       message.className = "message success";
       message.textContent = `Quiz generated successfully. Quiz code: ${quiz.quizCode}`;
     } catch (error) {
+      console.error("Quiz generation error:", error);
       message.className = "message error";
-      message.textContent = error.message || "An error occurred while generating the quiz.";
+      message.textContent =
+        error.message || "An error occurred while generating the quiz.";
     }
   });
 }
