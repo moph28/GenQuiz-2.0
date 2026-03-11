@@ -1,6 +1,4 @@
 const STORAGE_KEYS = {
-  teacherAccount: "genquiz_teacher_account",
-  teacherSession: "genquiz_teacher_session",
   quizzes: "genquiz_saved_quizzes",
   studentAccess: "genquiz_student_access",
   studentResults: "genquiz_student_results",
@@ -8,32 +6,18 @@ const STORAGE_KEYS = {
   activeStudentResult: "genquiz_active_student_result",
 };
 
-function saveTeacherAccount(username, password) {
-  localStorage.setItem(
-    STORAGE_KEYS.teacherAccount,
-    JSON.stringify({ username, password })
-  );
+function redirect(path) {
+  window.location.href = path;
 }
 
-function getTeacherAccount() {
-  const raw = localStorage.getItem(STORAGE_KEYS.teacherAccount);
-  return raw ? JSON.parse(raw) : null;
-}
-
-function saveTeacherSession(username) {
-  localStorage.setItem(
-    STORAGE_KEYS.teacherSession,
-    JSON.stringify({ username, role: "teacher" })
-  );
+function _toInt(value, fallback = 0) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
 }
 
 function getTeacherSession() {
-  const raw = localStorage.getItem(STORAGE_KEYS.teacherSession);
+  const raw = localStorage.getItem("genquiz_teacher_session");
   return raw ? JSON.parse(raw) : null;
-}
-
-function clearTeacherSession() {
-  localStorage.removeItem(STORAGE_KEYS.teacherSession);
 }
 
 function getSavedQuizzes() {
@@ -41,10 +25,14 @@ function getSavedQuizzes() {
   return raw ? JSON.parse(raw) : [];
 }
 
+function setSavedQuizzes(quizzes) {
+  localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
+}
+
 function saveQuiz(quiz) {
   const quizzes = getSavedQuizzes();
   quizzes.push(quiz);
-  localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
+  setSavedQuizzes(quizzes);
 }
 
 function saveStudentAccess(username, quizCode) {
@@ -54,9 +42,9 @@ function saveStudentAccess(username, quizCode) {
   );
 }
 
-function getStudentAccess() {
-  const raw = localStorage.getItem(STORAGE_KEYS.studentAccess);
-  return raw ? JSON.parse(raw) : null;
+function getStudentResults() {
+  const raw = localStorage.getItem(STORAGE_KEYS.studentResults);
+  return raw ? JSON.parse(raw) : [];
 }
 
 function saveActiveStudentQuiz(payload) {
@@ -72,10 +60,8 @@ function getActiveStudentQuiz() {
 }
 
 function saveStudentResult(result) {
-  const raw = localStorage.getItem(STORAGE_KEYS.studentResults);
-  const results = raw ? JSON.parse(raw) : [];
+  const results = getStudentResults();
   results.push(result);
-
   localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(results));
   localStorage.setItem(
     STORAGE_KEYS.activeStudentResult,
@@ -86,15 +72,6 @@ function saveStudentResult(result) {
 function getActiveStudentResult() {
   const raw = localStorage.getItem(STORAGE_KEYS.activeStudentResult);
   return raw ? JSON.parse(raw) : null;
-}
-
-function redirect(path) {
-  window.location.href = path;
-}
-
-function _toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? fallback : parsed;
 }
 
 function normalizeSpaces(text) {
@@ -114,17 +91,24 @@ function cleanTerm(term) {
   );
 }
 
-function getDifficultyRules(difficulty) {
-  if (difficulty === "easy") {
-    return { minLen: 20, maxLen: 110, tfFalseRate: 20 };
-  }
-  if (difficulty === "hard") {
-    return { minLen: 25, maxLen: 180, tfFalseRate: 60 };
-  }
-  return { minLen: 20, maxLen: 140, tfFalseRate: 40 };
+function formatDateTime(value) {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleString();
 }
 
-function extractDefinitions(text, difficulty) {
+function getDifficultyRules(difficulty) {
+  if (difficulty === "easy") {
+    return { tfFalseRate: 20 };
+  }
+  if (difficulty === "hard") {
+    return { tfFalseRate: 60 };
+  }
+  return { tfFalseRate: 40 };
+}
+
+function extractDefinitions(text) {
   const sentences = splitSentences(text);
   const definitions = [];
 
@@ -234,19 +218,34 @@ function getSelectedQuestionTypes() {
 }
 
 function buildDistribution() {
+  const mcq = _toInt(document.getElementById("mcq-count")?.value, 0);
+  const tf = _toInt(document.getElementById("tf-count")?.value, 0);
+  const id = _toInt(document.getElementById("id-count")?.value, 0);
 
-const mcq = _toInt(document.getElementById("mcq-count")?.value,0);
-const tf = _toInt(document.getElementById("tf-count")?.value,0);
-const id = _toInt(document.getElementById("id-count")?.value,0);
+  const distribution = [];
+  if (mcq > 0) distribution.push(["mcq", mcq]);
+  if (tf > 0) distribution.push(["tf", tf]);
+  if (id > 0) distribution.push(["id", id]);
 
-const distribution=[];
+  return distribution;
+}
 
-if(mcq>0) distribution.push(["mcq",mcq]);
-if(tf>0) distribution.push(["tf",tf]);
-if(id>0) distribution.push(["id",id]);
+function validateDistribution(totalQuestions, distribution) {
+  const total = distribution.reduce((sum, [, count]) => sum + count, 0);
 
-return distribution;
+  if (totalQuestions <= 0) {
+    return "Please enter the total number of questions.";
+  }
 
+  if (total === 0) {
+    return "Please enter question distribution.";
+  }
+
+  if (total !== totalQuestions) {
+    return "Distribution must equal total questions.";
+  }
+
+  return null;
 }
 
 function cycleDefinitions(definitions, count) {
@@ -298,19 +297,18 @@ function renderQuizPreview(quiz) {
 
   const questionMarkup = quiz.questions
     .map((item, index) => {
-
       const optionsMarkup = item.options
-        ? `<ul class="preview-options">
-            ${item.options.map(o => `<li>${o}</li>`).join("")}
-          </ul>`
+        ? `<ul class="preview-options">${item.options
+            .map((option) => `<li>${option}</li>`)
+            .join("")}</ul>`
         : "";
 
       return `
-      <div class="preview-question">
-        <h4>${index + 1}. ${item.question}</h4>
-        ${optionsMarkup}
-        <p class="preview-answer"><strong>Answer:</strong> ${item.answer}</p>
-      </div>
+        <div class="preview-question">
+          <h4>${index + 1}. ${item.question}</h4>
+          ${optionsMarkup}
+          <p class="preview-answer"><strong>Answer:</strong> ${item.answer}</p>
+        </div>
       `;
     })
     .join("");
@@ -322,7 +320,6 @@ function renderQuizPreview(quiz) {
       <p><strong>Difficulty:</strong> ${quiz.difficulty}</p>
       <p><strong>Questions:</strong> ${quiz.questions.length}</p>
     </div>
-
     <div class="preview-list">
       ${questionMarkup}
     </div>
@@ -332,10 +329,8 @@ function renderQuizPreview(quiz) {
 function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => resolve(String(reader.result || ""));
     reader.onerror = () => reject(new Error("Failed to read TXT file."));
-
     reader.readAsText(file);
   });
 }
@@ -343,10 +338,8 @@ function readTextFile(file) {
 function readArrayBuffer(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(new Error("Failed to read file data."));
-
     reader.readAsArrayBuffer(file);
   });
 }
@@ -366,7 +359,7 @@ async function readPdfFile(file) {
     const content = await page.getTextContent();
 
     const pageText = content.items.map((item) => item.str || "").join(" ");
-    text += " " + pageText;
+    text += ` ${pageText}`;
   }
 
   return normalizeSpaces(text);
@@ -384,238 +377,15 @@ async function readDocxFile(file) {
 }
 
 async function extractTextFromFile(file) {
-  const extension = file.name.split(".").pop()?.toLowerCase();
+  const ext = file.name.split(".").pop()?.toLowerCase();
 
-  if (extension === "txt") {
-    return readTextFile(file);
-  }
+  if (ext === "txt") return readTextFile(file);
+  if (ext === "pdf") return readPdfFile(file);
+  if (ext === "docx") return readDocxFile(file);
 
-  if (extension === "pdf") {
-    return readPdfFile(file);
-  }
-
-  if (extension === "docx") {
-    return readDocxFile(file);
-  }
-
-  throw new Error("Unsupported file type. Please upload a TXT, PDF, or DOCX file.");
-}
-function handleTeacherRegister() {
-  const form = document.getElementById("teacher-register-form");
-  const message = document.getElementById("register-message");
-  if (!form || !message) return;
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const username = document.getElementById("register-username").value.trim();
-    const password = document.getElementById("register-password").value;
-    const confirmPassword = document.getElementById("register-confirm-password").value;
-
-    if (!username || !password || !confirmPassword) {
-      message.className = "message error";
-      message.textContent = "All fields are required.";
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      message.className = "message error";
-      message.textContent = "Passwords do not match.";
-      return;
-    }
-
-    const existing = getTeacherAccount();
-    if (existing && existing.username.toLowerCase() === username.toLowerCase()) {
-      message.className = "message error";
-      message.textContent = "Username already exists.";
-      return;
-    }
-
-    saveTeacherAccount(username, password);
-    message.className = "message success";
-    message.textContent = "Account created successfully. Redirecting to login...";
-
-    setTimeout(() => redirect("teacher-login.html"), 900);
-  });
+  throw new Error("Unsupported file type.");
 }
 
-function handleTeacherLogin() {
-  const form = document.getElementById("teacher-login-form");
-  const message = document.getElementById("login-message");
-  if (!form || !message) return;
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const username = document.getElementById("login-username").value.trim();
-    const password = document.getElementById("login-password").value;
-
-    if (!username || !password) {
-      message.className = "message error";
-      message.textContent = "Username and password are required.";
-      return;
-    }
-
-    const account = getTeacherAccount();
-    if (!account) {
-      message.className = "message error";
-      message.textContent = "No teacher account found. Please create one first.";
-      return;
-    }
-
-    const isValid =
-      account.username === username &&
-      account.password === password;
-
-    if (!isValid) {
-      message.className = "message error";
-      message.textContent = "Invalid username or password.";
-      return;
-    }
-
-    saveTeacherSession(username);
-    message.className = "message success";
-    message.textContent = "Login successful. Redirecting to dashboard...";
-
-    setTimeout(() => redirect("teacher-dashboard.html"), 700);
-  });
-}
-
-function protectTeacherPages() {
-  const protectedPages = ["teacher-dashboard.html", "quiz-generator.html"];
-  const currentPath = window.location.pathname.split("/").pop();
-
-  if (!protectedPages.includes(currentPath)) return;
-
-  const session = getTeacherSession();
-  if (!session || session.role !== "teacher") {
-    redirect("teacher-login.html");
-    return;
-  }
-
-  const welcome = document.getElementById("teacher-welcome");
-  const display = document.getElementById("teacher-username-display");
-  if (welcome) welcome.textContent = `Welcome, ${session.username}`;
-  if (display) display.textContent = session.username;
-
-  const logoutBtn = document.getElementById("logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      clearTeacherSession();
-      redirect("index.html");
-    });
-  }
-}
-
-function validateDistribution(totalQuestions,distribution){
-
-const total=distribution.reduce((sum,[,count])=>sum+count,0);
-
-if(totalQuestions<=0){
-return "Please enter the total number of questions.";
-}
-
-if(total===0){
-return "Please enter question distribution.";
-}
-
-if(total!==totalQuestions){
-return "Distribution must equal total questions.";
-}
-
-return null;
-
-}
-function handleQuizGenerator() {
-  const form = document.getElementById("quiz-generator-form");
-  const message = document.getElementById("generator-message");
-
-  if (!form || !message) return;
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    message.className = "message";
-    message.textContent = "Generating quiz...";
-
-    const fileInput = document.getElementById("lesson-file");
-    const difficulty = document.getElementById("difficulty")?.value || "medium";
-    const totalQuestions = _toInt(
-      document.getElementById("question-count")?.value,
-      10
-    );
-
-    const selectedTypes = getSelectedQuestionTypes();
-    const distribution = buildDistribution();
-    const file = fileInput?.files?.[0];
-
-    if (!file) {
-      message.className = "message error";
-      message.textContent = "Please upload a lesson file.";
-      return;
-    }
-
-    if (!selectedTypes.length) {
-      message.className = "message error";
-      message.textContent = "Please select at least one question type.";
-      return;
-    }
-
-    if (!distribution.length) {
-      message.className = "message error";
-      message.textContent = "Please enter a valid question distribution.";
-      return;
-    }
-
-    const distributionTotal = distribution.reduce(
-      (sum, [, count]) => sum + count,
-      0
-    );
-
-    if (distributionTotal !== totalQuestions) {
-      message.className = "message error";
-      message.textContent =
-        "The total distribution must match the number of questions.";
-      return;
-    }
-
-    try {
-      const text = await extractTextFromFile(file);
-
-      if (!text || !text.trim()) {
-        message.className = "message error";
-        message.textContent = "No readable text was extracted from the file.";
-        renderQuizPreview(null);
-        return;
-      }
-
-      const definitions = extractDefinitions(text, difficulty);
-
-      if (!definitions.length) {
-        message.className = "message error";
-        message.textContent =
-          "No suitable definition sentences were found. Use lesson content with clear 'X is Y' statements.";
-        renderQuizPreview(null);
-        return;
-      }
-
-      const questions = generateByDistribution(
-        definitions,
-        difficulty,
-        distribution
-      );
-
-      if (!questions.length) {
-        message.className = "message error";
-        message.textContent = "No questions were generated.";
-        renderQuizPreview(null);
-        return;
-      }
-
-      const session = getTeacherSession();
-      const quizTitle = file.name.replace(/\.[^/.]+$/, "");
-
-function handleQuizGenerator(){
 function handleQuizGenerator() {
   const form = document.getElementById("quiz-generator-form");
   const message = document.getElementById("generator-message");
@@ -667,17 +437,21 @@ function handleQuizGenerator() {
         return;
       }
 
-      const definitions = extractDefinitions(text, difficulty);
+      const definitions = extractDefinitions(text);
 
       if (!definitions.length) {
         message.className = "message error";
         message.textContent =
-          "No definition sentences were detected.";
+          "No definition sentences were detected. Use sentences like 'A computer is an electronic device.'";
         renderQuizPreview(null);
         return;
       }
 
-      const questions = generateByDistribution(definitions, difficulty, distribution);
+      const questions = generateByDistribution(
+        definitions,
+        difficulty,
+        distribution
+      );
 
       if (!questions.length) {
         message.className = "message error";
@@ -721,8 +495,9 @@ function handleStudentAccess() {
   form.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    const username = document.getElementById("student-username").value.trim();
-    const quizCode = document.getElementById("student-quiz-code").value.trim().toUpperCase();
+    const username = document.getElementById("student-username")?.value.trim() || "";
+    const quizCode =
+      document.getElementById("student-quiz-code")?.value.trim().toUpperCase() || "";
 
     if (!username || !quizCode) {
       message.className = "message error";
@@ -781,7 +556,10 @@ function renderStudentQuestion(payload) {
 
   let answerMarkup = "";
 
-  if (currentQuestion.type === "Multiple Choice" || currentQuestion.type === "True/False") {
+  if (
+    currentQuestion.type === "Multiple Choice" ||
+    currentQuestion.type === "True/False"
+  ) {
     const options = currentQuestion.options || [];
     answerMarkup = `
       <div class="answer-group">
@@ -809,7 +587,11 @@ function renderStudentQuestion(payload) {
         <input
           id="student-identification-answer"
           type="text"
-          value="${answers[currentIndex] ? String(answers[currentIndex]).replace(/"/g, "&quot;") : ""}"
+          value="${
+            answers[currentIndex]
+              ? String(answers[currentIndex]).replace(/"/g, "&quot;")
+              : ""
+          }"
           placeholder="Type your answer"
         />
       </div>
@@ -823,22 +605,24 @@ function renderStudentQuestion(payload) {
     </article>
   `;
 
-  prevBtn.disabled = currentIndex === 0;
+  if (prevBtn) prevBtn.disabled = currentIndex === 0;
   const isLast = currentIndex === questions.length - 1;
-  nextBtn.classList.toggle("hidden", isLast);
-  submitBtn.classList.toggle("hidden", !isLast);
+  if (nextBtn) nextBtn.classList.toggle("hidden", isLast);
+  if (submitBtn) submitBtn.classList.toggle("hidden", !isLast);
 }
 
 function captureCurrentStudentAnswer(payload) {
   const currentQuestion = payload.questions[payload.currentIndex];
 
-  if (currentQuestion.type === "Multiple Choice" || currentQuestion.type === "True/False") {
+  if (
+    currentQuestion.type === "Multiple Choice" ||
+    currentQuestion.type === "True/False"
+  ) {
     const selected = document.querySelector('input[name="student-answer"]:checked');
     payload.answers[payload.currentIndex] = selected ? selected.value : "";
   } else {
     const input = document.getElementById("student-identification-answer");
-    payload.answers[payload.currentIndex] =
-      input ? input.value.trim() : "";
+    payload.answers[payload.currentIndex] = input ? input.value.trim() : "";
   }
 
   saveActiveStudentQuiz(payload);
@@ -887,29 +671,33 @@ function handleStudentQuiz() {
   const submitBtn = document.getElementById("submit-quiz-btn");
   const message = document.getElementById("student-quiz-message");
 
-  prevBtn.addEventListener("click", () => {
+  prevBtn?.addEventListener("click", () => {
     captureCurrentStudentAnswer(payload);
     if (payload.currentIndex > 0) {
       payload.currentIndex -= 1;
       saveActiveStudentQuiz(payload);
       renderStudentQuestion(payload);
-      message.className = "message";
-      message.textContent = "";
+      if (message) {
+        message.className = "message";
+        message.textContent = "";
+      }
     }
   });
 
-  nextBtn.addEventListener("click", () => {
+  nextBtn?.addEventListener("click", () => {
     captureCurrentStudentAnswer(payload);
     if (payload.currentIndex < payload.questions.length - 1) {
       payload.currentIndex += 1;
       saveActiveStudentQuiz(payload);
       renderStudentQuestion(payload);
-      message.className = "message";
-      message.textContent = "";
+      if (message) {
+        message.className = "message";
+        message.textContent = "";
+      }
     }
   });
 
-  submitBtn.addEventListener("click", () => {
+  submitBtn?.addEventListener("click", () => {
     captureCurrentStudentAnswer(payload);
 
     const unanswered = payload.questions.some((_, index) => {
@@ -918,8 +706,10 @@ function handleStudentQuiz() {
     });
 
     if (unanswered) {
-      message.className = "message error";
-      message.textContent = "Please answer all questions before submitting.";
+      if (message) {
+        message.className = "message error";
+        message.textContent = "Please answer all questions before submitting.";
+      }
       return;
     }
 
@@ -952,24 +742,39 @@ function handleStudentResultPage() {
     redirect("student-access.html");
     return;
   }
-  document.getElementById("result-student-username").textContent = result.studentUsername;
-  document.getElementById("result-quiz-code").textContent = result.quizCode;
-  document.getElementById("result-score").textContent = result.score;
-  document.getElementById("result-total").textContent = result.totalItems;
-  document.getElementById("result-percentage").textContent = `${result.percentage}%`;
+
+  const usernameEl = document.getElementById("result-student-username");
+  const codeEl = document.getElementById("result-quiz-code");
+  const scoreEl = document.getElementById("result-score");
+  const totalEl = document.getElementById("result-total");
+  const percentEl = document.getElementById("result-percentage");
+
+  if (usernameEl) usernameEl.textContent = result.studentUsername;
+  if (codeEl) codeEl.textContent = result.quizCode;
+  if (scoreEl) scoreEl.textContent = result.score;
+  if (totalEl) totalEl.textContent = result.totalItems;
+  if (percentEl) percentEl.textContent = `${result.percentage}%`;
 }
-function getStudentResults() {
-  const raw = localStorage.getItem(STORAGE_KEYS.studentResults);
-  return raw ? JSON.parse(raw) : [];
+
+function getTeacherOwnedQuizzes() {
+  const session = getTeacherSession();
+  if (!session) return [];
+
+  return getSavedQuizzes()
+    .filter((quiz) => quiz.teacherUsername === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
-function formatDateTime(value) {
-  if (!value) return "--";
+function getTeacherOwnedQuizCodes() {
+  return new Set(getTeacherOwnedQuizzes().map((quiz) => quiz.quizCode));
+}
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
+function getTeacherOwnedResults() {
+  const quizCodes = getTeacherOwnedQuizCodes();
 
-  return date.toLocaleString();
+  return getStudentResults()
+    .filter((result) => quizCodes.has(result.quizCode))
+    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
 }
 
 function renderRecentQuizzes(quizzes) {
@@ -1035,18 +840,8 @@ function populateTeacherDashboard() {
   const session = getTeacherSession();
   if (!session) return;
 
-  const allQuizzes = getSavedQuizzes();
-  const allResults = getStudentResults();
-
-  const teacherQuizzes = allQuizzes
-    .filter((quiz) => quiz.teacherUsername === session.username)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const teacherQuizCodes = new Set(teacherQuizzes.map((quiz) => quiz.quizCode));
-
-  const teacherResults = allResults
-    .filter((result) => teacherQuizCodes.has(result.quizCode))
-    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+  const teacherQuizzes = getTeacherOwnedQuizzes();
+  const teacherResults = getTeacherOwnedResults();
 
   const totalQuizzesEl = document.getElementById("stat-total-quizzes");
   const totalAttemptsEl = document.getElementById("stat-total-attempts");
@@ -1056,14 +851,8 @@ function populateTeacherDashboard() {
   const lowestScoreEl = document.getElementById("summary-lowest-score");
   const recentStudentEl = document.getElementById("summary-recent-student");
 
-  if (totalQuizzesEl) {
-    totalQuizzesEl.textContent = String(teacherQuizzes.length);
-  }
-
-  if (totalAttemptsEl) {
-    totalAttemptsEl.textContent = String(teacherResults.length);
-  }
-
+  if (totalQuizzesEl) totalQuizzesEl.textContent = String(teacherQuizzes.length);
+  if (totalAttemptsEl) totalAttemptsEl.textContent = String(teacherResults.length);
   if (latestQuizCodeEl) {
     latestQuizCodeEl.textContent = teacherQuizzes.length
       ? teacherQuizzes[0].quizCode
@@ -1094,6 +883,7 @@ function populateTeacherDashboard() {
   renderRecentQuizzes(teacherQuizzes.slice(0, 5));
   renderRecentResults(teacherResults.slice(0, 5));
 }
+
 function copyTextToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -1108,235 +898,12 @@ function copyTextToClipboard(text) {
   document.body.removeChild(tempInput);
 }
 
-function getTeacherOwnedQuizzes() {
-  const session = getTeacherSession();
-  if (!session) return [];
-
-  return getSavedQuizzes()
-    .filter((quiz) => quiz.teacherUsername === session.username)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-}
-
-function renderQuizLibraryTable(quizzes) {
-  const tbody = document.getElementById("quiz-library-body");
-  if (!tbody) return;
-
-  if (!quizzes.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="empty-cell">No quizzes saved yet.</td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = quizzes
-    .map(
-      (quiz) => `
-        <tr>
-          <td>${quiz.title || "--"}</td>
-          <td>${quiz.quizCode || "--"}</td>
-          <td>${quiz.questionCount ?? "--"}</td>
-          <td>${quiz.difficulty || "--"}</td>
-          <td>${formatDateTime(quiz.createdAt)}</td>
-          <td>
-            <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
-              Copy Code
-            </button>
-          </td>
-        </tr>
-      `
-    )
-    .join("");
-}
-
-function renderQuizLibraryCards(quizzes) {
-  const cardList = document.getElementById("quiz-library-cards");
-  if (!cardList) return;
-
-  if (!quizzes.length) {
-    cardList.innerHTML = `<div class="empty-state-card">No quizzes saved yet.</div>`;
-    return;
-  }
-
-  cardList.innerHTML = quizzes
-    .map(
-      (quiz) => `
-        <article class="library-card">
-          <h3>${quiz.title || "--"}</h3>
-          <div class="library-meta">
-            <div class="library-meta-row">
-              <span>Quiz Code</span>
-              <strong>${quiz.quizCode || "--"}</strong>
-            </div>
-            <div class="library-meta-row">
-              <span>Questions</span>
-              <strong>${quiz.questionCount ?? "--"}</strong>
-            </div>
-            <div class="library-meta-row">
-              <span>Difficulty</span>
-              <strong>${quiz.difficulty || "--"}</strong>
-            </div>
-            <div class="library-meta-row">
-              <span>Date Created</span>
-              <strong>${formatDateTime(quiz.createdAt)}</strong>
-            </div>
-          </div>
-          <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
-            Copy Quiz Code
-          </button>
-        </article>
-      `
-    )
-    .join("");
-}
-
-function bindCopyQuizCodeButtons() {
-  const buttons = document.querySelectorAll(".copy-quiz-code-btn");
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const quizCode = button.getAttribute("data-code") || "";
-      copyTextToClipboard(quizCode);
-      button.textContent = "Copied";
-      setTimeout(() => {
-        button.textContent = button.classList.contains("mobile-copy-label")
-          ? "Copy Quiz Code"
-          : "Copy Code";
-      }, 1000);
-    });
-  });
-}
-
-function populateQuizLibrary() {
-  const currentPage = window.location.pathname.split("/").pop();
-  if (currentPage !== "quiz-library.html") return;
-
-  const searchInput = document.getElementById("quiz-library-search");
-  const allQuizzes = getTeacherOwnedQuizzes();
-
-  function applyRender() {
-    const keyword = (searchInput?.value || "").trim().toLowerCase();
-
-    const filteredQuizzes = allQuizzes.filter((quiz) => {
-      const title = String(quiz.title || "").toLowerCase();
-      const code = String(quiz.quizCode || "").toLowerCase();
-      return title.includes(keyword) || code.includes(keyword);
-    });
-
-    renderQuizLibraryTable(filteredQuizzes);
-    renderQuizLibraryCards(filteredQuizzes);
-    bindCopyQuizCodeButtons();
-  }
-
-  if (searchInput) {
-    searchInput.addEventListener("input", applyRender);
-  }
-
-  applyRender();
-}
-function populateTeacherResultsPage(){
-
-const page = window.location.pathname.split("/").pop();
-
-if(page !== "teacher-results.html") return;
-
-const studentInput = document.getElementById("results-student-filter");
-const quizInput = document.getElementById("results-quiz-filter");
-const dateInput = document.getElementById("results-date-filter");
-const clearBtn = document.getElementById("results-clear-btn");
-
-const tableBody = document.getElementById("results-table-body");
-
-const session = getTeacherSession();
-
-if(!session) return;
-
-const quizzes = getSavedQuizzes();
-
-const teacherQuizCodes = quizzes
-.filter(q => q.teacherUsername === session.username)
-.map(q => q.quizCode);
-
-const allResults = getStudentResults();
-
-const teacherResults = allResults.filter(result =>
-teacherQuizCodes.includes(result.quizCode)
-);
-
-function render(results){
-
-if(!results.length){
-tableBody.innerHTML = `
-<tr>
-<td colspan="5" class="empty-cell">No results found.</td>
-</tr>`;
-return;
-}
-
-tableBody.innerHTML = results.map(r => `
-<tr>
-<td>${r.studentUsername}</td>
-<td>${r.quizCode}</td>
-<td>${r.score}/${r.totalItems}</td>
-<td>${r.percentage}%</td>
-<td>${new Date(r.submittedAt).toLocaleString()}</td>
-</tr>
-`).join("");
-
-}
-
-function applyFilters(){
-
-const student = studentInput.value.toLowerCase();
-const quiz = quizInput.value.toLowerCase();
-const date = dateInput.value;
-
-const filtered = teacherResults.filter(r =>{
-
-const studentMatch = r.studentUsername.toLowerCase().includes(student);
-const quizMatch = r.quizCode.toLowerCase().includes(quiz);
-
-let dateMatch = true;
-
-if(date){
-const resultDate = new Date(r.submittedAt).toISOString().slice(0,10);
-dateMatch = resultDate === date;
-}
-
-return studentMatch && quizMatch && dateMatch;
-
-});
-
-render(filtered);
-
-}
-
-studentInput.addEventListener("input",applyFilters);
-quizInput.addEventListener("input",applyFilters);
-dateInput.addEventListener("change",applyFilters);
-
-clearBtn.addEventListener("click",()=>{
-studentInput.value="";
-quizInput.value="";
-dateInput.value="";
-render(teacherResults);
-});
-
-render(teacherResults);
-
-}
-function setSavedQuizzes(quizzes) {
-  localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
-}
-
 function deleteQuizById(quizId) {
   const quizzes = getSavedQuizzes().filter((quiz) => quiz.quizId !== quizId);
   setSavedQuizzes(quizzes);
 
-  const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
-  const results = resultsRaw ? JSON.parse(resultsRaw) : [];
-  const filteredResults = results.filter((result) => result.quizId !== quizId);
-  localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(filteredResults));
+  const results = getStudentResults().filter((result) => result.quizId !== quizId);
+  localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(results));
 }
 
 function renderLibraryQuizPreview(quiz) {
@@ -1436,7 +1003,6 @@ function renderQuizLibraryCards(quizzes) {
       (quiz) => `
         <article class="library-card">
           <h3>${quiz.title || "--"}</h3>
-
           <div class="library-meta">
             <div class="library-meta-row">
               <span>Quiz Code</span>
@@ -1455,7 +1021,6 @@ function renderQuizLibraryCards(quizzes) {
               <strong>${formatDateTime(quiz.createdAt)}</strong>
             </div>
           </div>
-
           <div class="library-actions">
             <button class="inline-btn open-quiz-btn" type="button" data-id="${quiz.quizId}">
               Open
@@ -1473,27 +1038,64 @@ function renderQuizLibraryCards(quizzes) {
     .join("");
 }
 
-function copyTextToClipboard(text) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(() => {});
-    return;
-  }
+function bindQuizLibraryActions(filteredQuizzes) {
+  document.querySelectorAll(".copy-quiz-code-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizCode = button.getAttribute("data-code") || "";
+      copyTextToClipboard(quizCode);
+      button.textContent = "Copied";
+      setTimeout(() => {
+        button.textContent = "Copy Code";
+      }, 1000);
+    });
+  });
 
-  const tempInput = document.createElement("input");
-  tempInput.value = text;
-  document.body.appendChild(tempInput);
-  tempInput.select();
-  document.execCommand("copy");
-  document.body.removeChild(tempInput);
-}
+  document.querySelectorAll(".open-quiz-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizId = button.getAttribute("data-id");
+      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
+      renderLibraryQuizPreview(quiz);
+    });
+  });
 
-function getTeacherOwnedQuizzes() {
-  const session = getTeacherSession();
-  if (!session) return [];
+  document.querySelectorAll(".delete-quiz-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizId = button.getAttribute("data-id");
+      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
+      if (!quiz) return;
 
-  return getSavedQuizzes()
-    .filter((quiz) => quiz.teacherUsername === session.username)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const modal = document.getElementById("delete-modal");
+      const modalText = document.getElementById("delete-modal-text");
+      const confirmBtn = document.getElementById("confirm-delete-btn");
+      const cancelBtn = document.getElementById("cancel-delete-btn");
+
+      if (!modal || !modalText || !confirmBtn || !cancelBtn) {
+        const confirmed = window.confirm(
+          `Delete "${quiz.title}"?\n\nThis will also remove related student results.`
+        );
+        if (!confirmed) return;
+
+        deleteQuizById(quizId);
+        renderLibraryQuizPreview(null);
+        populateQuizLibrary();
+        return;
+      }
+
+      modal.classList.remove("hidden");
+      modalText.textContent = `Delete "${quiz.title}"?`;
+
+      confirmBtn.onclick = () => {
+        deleteQuizById(quizId);
+        modal.classList.add("hidden");
+        renderLibraryQuizPreview(null);
+        populateQuizLibrary();
+      };
+
+      cancelBtn.onclick = () => {
+        modal.classList.add("hidden");
+      };
+    });
+  });
 }
 
 function populateQuizLibrary() {
@@ -1517,114 +1119,160 @@ function populateQuizLibrary() {
     bindQuizLibraryActions(filteredQuizzes);
   }
 
-  if (searchInput) {
-    searchInput.addEventListener("input", applyRender);
-  }
-
+  searchInput?.addEventListener("input", applyRender);
   applyRender();
 }
 
-function bindQuizLibraryActions(filteredQuizzes) {
-  document.querySelectorAll(".copy-quiz-code-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      const quizCode = button.getAttribute("data-code") || "";
-      copyTextToClipboard(quizCode);
-      button.textContent = "Copied";
-      setTimeout(() => {
-        button.textContent = "Copy Code";
-      }, 1000);
-    });
-  });
+function renderTeacherResultsTable(results) {
+  const tbody = document.getElementById("teacher-results-body");
+  if (!tbody) return;
 
-  document.querySelectorAll(".open-quiz-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      const quizId = button.getAttribute("data-id");
-      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
-      renderLibraryQuizPreview(quiz);
-    });
-  });
+  if (!results.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="empty-cell">No results found.</td>
+      </tr>
+    `;
+    return;
+  }
 
-  document.querySelectorAll(".delete-quiz-btn").forEach(button => {
-
-button.addEventListener("click", () => {
-
-const quizId = button.dataset.id;
-
-const modal = document.getElementById("delete-modal");
-const modalText = document.getElementById("delete-modal-text");
-const confirmBtn = document.getElementById("confirm-delete-btn");
-const cancelBtn = document.getElementById("cancel-delete-btn");
-
-modal.classList.remove("hidden");
-
-confirmBtn.onclick = () => {
-
-deleteQuizById(quizId);
-
-modal.classList.add("hidden");
-
-renderLibraryQuizPreview(null);
-
-populateQuizLibrary();
-
-};
-
-cancelBtn.onclick = () => {
-modal.classList.add("hidden");
-};
-
-});
-
-});
-      function populateTeacherDashboard(){
-
-const currentPage = window.location.pathname.split("/").pop();
-
-if(currentPage !== "teacher-dashboard.html") return;
-
-const session = getTeacherSession();
-
-if(!session) return;
-
-const quizzes = getSavedQuizzes()
-.filter(q => q.teacherUsername === session.username);
-
-const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
-const results = resultsRaw ? JSON.parse(resultsRaw) : [];
-
-const teacherResults = results.filter(r => r.teacherUsername === session.username);
-
-const totalQuizzes = quizzes.length;
-
-const totalAttempts = teacherResults.length;
-
-const students = new Set(teacherResults.map(r => r.studentUsername));
-
-const totalStudents = students.size;
-
-let averageScore = 0;
-
-if(totalAttempts > 0){
-
-let scoreSum = 0;
-
-teacherResults.forEach(r=>{
-scoreSum += (r.score / r.total) * 100;
-});
-
-averageScore = Math.round(scoreSum / totalAttempts);
-
+  tbody.innerHTML = results
+    .map(
+      (result) => `
+        <tr>
+          <td>${result.studentUsername || "--"}</td>
+          <td>${result.quizCode || "--"}</td>
+          <td>${result.score}/${result.totalItems}</td>
+          <td>${result.percentage}%</td>
+          <td>${formatDateTime(result.submittedAt)}</td>
+        </tr>
+      `
+    )
+    .join("");
 }
 
-document.getElementById("stat-total-quizzes").textContent = totalQuizzes;
+function renderTeacherResultsCards(results) {
+  const cardList = document.getElementById("teacher-results-cards");
+  if (!cardList) return;
 
-document.getElementById("stat-total-students").textContent = totalStudents;
+  if (!results.length) {
+    cardList.innerHTML = `<div class="empty-state-card">No results found.</div>`;
+    return;
+  }
 
-document.getElementById("stat-total-attempts").textContent = totalAttempts;
+  cardList.innerHTML = results
+    .map(
+      (result) => `
+        <article class="library-card">
+          <h3>${result.studentUsername || "--"}</h3>
+          <div class="library-meta">
+            <div class="library-meta-row">
+              <span>Quiz Code</span>
+              <strong>${result.quizCode || "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Score</span>
+              <strong>${result.score}/${result.totalItems}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Percentage</span>
+              <strong>${result.percentage}%</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Submitted At</span>
+              <strong>${formatDateTime(result.submittedAt)}</strong>
+            </div>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
 
-document.getElementById("stat-average-score").textContent = `${averageScore}%`;
+function updateTeacherResultsStats(results) {
+  const totalAttemptsEl = document.getElementById("results-total-attempts");
+  const averageScoreEl = document.getElementById("results-average-score");
+  const highestScoreEl = document.getElementById("results-highest-score");
+  const lowestScoreEl = document.getElementById("results-lowest-score");
 
-      }
+  if (totalAttemptsEl) totalAttemptsEl.textContent = String(results.length);
+
+  if (!results.length) {
+    if (averageScoreEl) averageScoreEl.textContent = "--";
+    if (highestScoreEl) highestScoreEl.textContent = "--";
+    if (lowestScoreEl) lowestScoreEl.textContent = "--";
+    return;
+  }
+
+  const percentages = results.map((item) => Number(item.percentage) || 0);
+  const average = Math.round(
+    percentages.reduce((sum, value) => sum + value, 0) / percentages.length
+  );
+  const highest = Math.max(...percentages);
+  const lowest = Math.min(...percentages);
+
+  if (averageScoreEl) averageScoreEl.textContent = `${average}%`;
+  if (highestScoreEl) highestScoreEl.textContent = `${highest}%`;
+  if (lowestScoreEl) lowestScoreEl.textContent = `${lowest}%`;
+}
+
+function filterTeacherResults(results, studentKeyword, quizCodeKeyword, selectedDate) {
+  return results.filter((result) => {
+    const username = String(result.studentUsername || "").toLowerCase();
+    const quizCode = String(result.quizCode || "").toLowerCase();
+    const submittedDate = result.submittedAt
+      ? new Date(result.submittedAt).toISOString().slice(0, 10)
+      : "";
+
+    const matchesStudent = username.includes(studentKeyword);
+    const matchesQuizCode = quizCode.includes(quizCodeKeyword);
+    const matchesDate = !selectedDate || submittedDate === selectedDate;
+
+    return matchesStudent && matchesQuizCode && matchesDate;
+  });
+}
+function populateTeacherResultsPage() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "teacher-results.html") return;
+
+  const studentFilter = document.getElementById("results-student-filter");
+  const quizCodeFilter = document.getElementById("results-quiz-filter");
+  const dateFilter = document.getElementById("results-date-filter");
+  const clearBtn = document.getElementById("results-clear-btn");
+
+  const allTeacherResults = getTeacherOwnedResults();
+
+  function applyFilters() {
+    const studentKeyword = (studentFilter?.value || "").trim().toLowerCase();
+    const quizCodeKeyword = (quizCodeFilter?.value || "").trim().toLowerCase();
+    const selectedDate = (dateFilter?.value || "").trim();
+
+    const filteredResults = filterTeacherResults(
+      allTeacherResults,
+      studentKeyword,
+      quizCodeKeyword,
+      selectedDate
+    );
+
+    renderTeacherResultsTable(filteredResults);
+    renderTeacherResultsCards(filteredResults);
+    updateTeacherResultsStats(filteredResults);
+  }
+
+  studentFilter?.addEventListener("input", applyFilters);
+  quizCodeFilter?.addEventListener("input", applyFilters);
+  dateFilter?.addEventListener("change", applyFilters);
+
+  clearBtn?.addEventListener("click", () => {
+    if (studentFilter) studentFilter.value = "";
+    if (quizCodeFilter) quizCodeFilter.value = "";
+    if (dateFilter) dateFilter.value = "";
+    applyFilters();
+  });
+
+  applyFilters();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   handleQuizGenerator();
   handleStudentAccess();
