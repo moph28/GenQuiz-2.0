@@ -1,151 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiz Generator | GenQuiz</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Generator | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon small">GQ</div>
+        <div>
+          <h2>GenQuiz</h2>
+          <p>Teacher Panel</p>
+        </div>
+      </div>
 
-<div class="dashboard-layout">
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="teacher-dashboard.html">Dashboard</a>
+        <a class="nav-item active" href="quiz-generator.html">Quiz Generator</a>
+        <a class="nav-item" href="#">Quiz Library</a>
+        <a class="nav-item" href="#">Results</a>
+      </nav>
 
-<!-- Sidebar -->
-<aside class="sidebar">
+      <button id="logout-btn" class="sidebar-back" type="button">Log Out</button>
+    </aside>
 
-<div class="sidebar-brand">
-<div class="brand-icon small">GQ</div>
-<div>
-<h2>GenQuiz</h2>
-<p>Teacher Panel</p>
-</div>
-</div>
+    <section class="dashboard-main">
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">Quiz Generator</p>
+          <h1>Create a New Quiz</h1>
+        </div>
+        <div class="header-chip">Rule-Based Engine</div>
+      </header>
 
-<nav class="sidebar-nav">
+      <section class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Core Feature</p>
+              <h2>Lesson File to Quiz</h2>
+            </div>
+          </div>
 
-<a class="nav-item" href="teacher-dashboard.html">Dashboard</a>
+          <form id="quiz-generator-form" class="quiz-form" novalidate>
+            <div class="form-group">
+              <label for="lesson-file">Upload lesson file</label>
+              <input id="lesson-file" type="file" accept=".txt,.pdf,.docx" />
+              <p class="helper-text">TXT is fully supported now. PDF and DOCX will be added next.</p>
+            </div>
 
-<a class="nav-item active" href="quiz-generator.html">
-Quiz Generator
-</a>
+            <div class="form-group">
+              <label>Question Types</label>
+              <div class="checkbox-stack">
+                <label><input type="checkbox" name="question_types" value="mcq" checked /> Multiple Choice</label>
+                <label><input type="checkbox" name="question_types" value="tf" checked /> True or False</label>
+                <label><input type="checkbox" name="question_types" value="id" checked /> Identification</label>
+              </div>
+            </div>
 
-<a class="nav-item" href="#">
-Quiz Library
-</a>
+            <div class="two-col">
+              <div class="form-group">
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty">
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
 
-<a class="nav-item" href="#">
-Results
-</a>
+              <div class="form-group">
+                <label for="question-count">Number of Questions</label>
+                <input id="question-count" type="number" min="5" max="50" value="10" />
+              </div>
+            </div>
 
-</nav>
+            <div class="form-group">
+              <label>Question Distribution</label>
+              <div class="distribution-grid">
+                <label>
+                  <span>MCQ</span>
+                  <input id="mcq-count" type="number" min="0" value="4" />
+                </label>
+                <label>
+                  <span>True/False</span>
+                  <input id="tf-count" type="number" min="0" value="3" />
+                </label>
+                <label>
+                  <span>Identification</span>
+                  <input id="id-count" type="number" min="0" value="3" />
+                </label>
+              </div>
+              <p class="helper-text">Questions are generated in this order: MCQ → True/False → Identification.</p>
+            </div>
 
-<button id="logout-btn" class="sidebar-back">
-Logout
-</button>
+            <p id="generator-message" class="message" aria-live="polite"></p>
 
-</aside>
+            <button class="primary-btn" type="submit">Generate Quiz</button>
+          </form>
+        </article>
 
-<!-- Main Content -->
-<section class="dashboard-main">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Generated Output</p>
+              <h2>Quiz Preview</h2>
+            </div>
+          </div>
 
-<header class="dashboard-header">
+          <div id="quiz-preview" class="preview-box">
+            <p class="preview-empty">No quiz generated yet.</p>
+          </div>
+        </article>
+      </section>
+    </section>
+  </div>
 
-<div>
-<p class="eyebrow">Quiz Generator</p>
-<h1>Create a New Quiz</h1>
-</div>
-
-</header>
-
-<!-- Generator Card -->
-
-<div class="panel">
-
-<h2>Upload Lesson Material</h2>
-
-<p class="text-muted">
-Upload a lesson file and GenQuiz will generate questions automatically.
-</p>
-
-<br>
-
-<label class="form-label">
-Upload File
-</label>
-
-<input
-type="file"
-id="lesson-file"
-class="form-input"
-/>
-
-<p class="hint-text">
-Supported files: TXT, PDF, DOCX
-</p>
-
-<br>
-
-<h2>Question Setup</h2>
-
-<div class="form-grid">
-
-<label>
-<input type="checkbox" value="mcq" checked>
-Multiple Choice
-</label>
-
-<label>
-<input type="checkbox" value="tf" checked>
-True or False
-</label>
-
-<label>
-<input type="checkbox" value="id" checked>
-Identification
-</label>
-
-</div>
-
-<br>
-
-<h2>Difficulty</h2>
-
-<select class="form-input">
-
-<option>Easy</option>
-<option selected>Medium</option>
-<option>Hard</option>
-
-</select>
-
-<br><br>
-
-<h2>Number of Questions</h2>
-
-<input
-type="number"
-value="10"
-min="5"
-max="50"
-class="form-input"
-/>
-
-<br><br>
-
-<button class="primary-btn">
-
-Generate Quiz
-
-</button>
-
-</div>
-
-</section>
-
-</div>
-
-<script src="script.js"></script>
-
+  <script src="script.js"></script>
 </body>
-  </html>
+</html>
