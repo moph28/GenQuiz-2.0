@@ -1383,18 +1383,39 @@ function bindQuizLibraryActions(filteredQuizzes) {
 
       if (!quiz) return;
 
-      const confirmed = window.confirm(
-        `Delete "${quiz.title}"?\n\nThis will also remove related student results.`
-      );
+      document.querySelectorAll(".delete-quiz-btn").forEach((button) => {
 
-      if (!confirmed) return;
+  button.addEventListener("click", () => {
+
+    const quizId = button.getAttribute("data-id");
+    const quiz = filteredQuizzes.find(q => q.quizId === quizId);
+
+    const modal = document.getElementById("delete-modal");
+    const modalText = document.getElementById("delete-modal-text");
+    const confirmBtn = document.getElementById("confirm-delete-btn");
+    const cancelBtn = document.getElementById("cancel-delete-btn");
+
+    modal.classList.remove("hidden");
+    modalText.textContent = `Delete "${quiz.title}"?`;
+
+    confirmBtn.onclick = () => {
 
       deleteQuizById(quizId);
+
+      modal.classList.add("hidden");
+
       renderLibraryQuizPreview(null);
+
       populateQuizLibrary();
-    });
+    };
+
+    cancelBtn.onclick = () => {
+      modal.classList.add("hidden");
+    };
+
   });
-}
+
+});
 document.addEventListener("DOMContentLoaded", () => {
 
 handleTeacherRegister();
