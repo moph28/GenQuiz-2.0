@@ -232,16 +232,19 @@ function getSelectedQuestionTypes() {
 }
 
 function buildDistribution() {
-  const mcqCount = _toInt(document.getElementById("mcq-count")?.value, 0);
-  const tfCount = _toInt(document.getElementById("tf-count")?.value, 0);
-  const idCount = _toInt(document.getElementById("id-count")?.value, 0);
 
-  const distribution = [];
-  if (mcqCount > 0) distribution.push(["mcq", mcqCount]);
-  if (tfCount > 0) distribution.push(["tf", tfCount]);
-  if (idCount > 0) distribution.push(["id", idCount]);
+const mcq = _toInt(document.getElementById("mcq-count")?.value,0);
+const tf = _toInt(document.getElementById("tf-count")?.value,0);
+const id = _toInt(document.getElementById("id-count")?.value,0);
 
-  return distribution;
+const distribution=[];
+
+if(mcq>0) distribution.push(["mcq",mcq]);
+if(tf>0) distribution.push(["tf",tf]);
+if(id>0) distribution.push(["id",id]);
+
+return distribution;
+
 }
 
 function cycleDefinitions(definitions, count) {
@@ -502,6 +505,25 @@ function protectTeacherPages() {
   }
 }
 
+function validateDistribution(totalQuestions,distribution){
+
+const total=distribution.reduce((sum,[,count])=>sum+count,0);
+
+if(totalQuestions<=0){
+return "Please enter the total number of questions.";
+}
+
+if(total===0){
+return "Please enter question distribution.";
+}
+
+if(total!==totalQuestions){
+return "Distribution must equal total questions.";
+}
+
+return null;
+
+}
 function handleQuizGenerator() {
   const form = document.getElementById("quiz-generator-form");
   const message = document.getElementById("generator-message");
