@@ -913,6 +913,146 @@ function populateTeacherDashboard() {
   renderRecentQuizzes(teacherQuizzes.slice(0, 5));
   renderRecentResults(teacherResults.slice(0, 5));
 }
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return;
+  }
+
+  const tempInput = document.createElement("input");
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+}
+
+function getTeacherOwnedQuizzes() {
+  const session = getTeacherSession();
+  if (!session) return [];
+
+  return getSavedQuizzes()
+    .filter((quiz) => quiz.teacherUsername === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function renderQuizLibraryTable(quizzes) {
+  const tbody = document.getElementById("quiz-library-body");
+  if (!tbody) return;
+
+  if (!quizzes.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-cell">No quizzes saved yet.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = quizzes
+    .map(
+      (quiz) => `
+        <tr>
+          <td>${quiz.title || "--"}</td>
+          <td>${quiz.quizCode || "--"}</td>
+          <td>${quiz.questionCount ?? "--"}</td>
+          <td>${quiz.difficulty || "--"}</td>
+          <td>${formatDateTime(quiz.createdAt)}</td>
+          <td>
+            <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
+              Copy Code
+            </button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function renderQuizLibraryCards(quizzes) {
+  const cardList = document.getElementById("quiz-library-cards");
+  if (!cardList) return;
+
+  if (!quizzes.length) {
+    cardList.innerHTML = `<div class="empty-state-card">No quizzes saved yet.</div>`;
+    return;
+  }
+
+  cardList.innerHTML = quizzes
+    .map(
+      (quiz) => `
+        <article class="library-card">
+          <h3>${quiz.title || "--"}</h3>
+          <div class="library-meta">
+            <div class="library-meta-row">
+              <span>Quiz Code</span>
+              <strong>${quiz.quizCode || "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Questions</span>
+              <strong>${quiz.questionCount ?? "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Difficulty</span>
+              <strong>${quiz.difficulty || "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Date Created</span>
+              <strong>${formatDateTime(quiz.createdAt)}</strong>
+            </div>
+          </div>
+          <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
+            Copy Quiz Code
+          </button>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function bindCopyQuizCodeButtons() {
+  const buttons = document.querySelectorAll(".copy-quiz-code-btn");
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizCode = button.getAttribute("data-code") || "";
+      copyTextToClipboard(quizCode);
+      button.textContent = "Copied";
+      setTimeout(() => {
+        button.textContent = button.classList.contains("mobile-copy-label")
+          ? "Copy Quiz Code"
+          : "Copy Code";
+      }, 1000);
+    });
+  });
+}
+
+function populateQuizLibrary() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "quiz-library.html") return;
+
+  const searchInput = document.getElementById("quiz-library-search");
+  const allQuizzes = getTeacherOwnedQuizzes();
+
+  function applyRender() {
+    const keyword = (searchInput?.value || "").trim().toLowerCase();
+
+    const filteredQuizzes = allQuizzes.filter((quiz) => {
+      const title = String(quiz.title || "").toLowerCase();
+      const code = String(quiz.quizCode || "").toLowerCase();
+      return title.includes(keyword) || code.includes(keyword);
+    });
+
+    renderQuizLibraryTable(filteredQuizzes);
+    renderQuizLibraryCards(filteredQuizzes);
+    bindCopyQuizCodeButtons();
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", applyRender);
+  }
+
+  applyRender();
+}
 document.addEventListener("DOMContentLoaded", () => {
   handleTeacherRegister();
   handleTeacherLogin();
@@ -922,4 +1062,5 @@ document.addEventListener("DOMContentLoaded", () => {
   handleStudentQuiz();
   handleStudentResultPage();
   populateTeacherDashboard();
+  populateQuizLibrary();
 });
