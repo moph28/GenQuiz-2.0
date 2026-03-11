@@ -201,7 +201,7 @@ function makeMultipleChoiceQuestion(definitionObj, termPool) {
 
   return {
     type: "Multiple Choice",
-    question: `Which term best matches this description: ${definitionObj.definition}?`,
+    question: `${definitionObj.definition}.`,
     options,
     answer: definitionObj.term,
   };
