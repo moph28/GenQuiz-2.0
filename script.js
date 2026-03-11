@@ -146,7 +146,7 @@ function extractDefinitions(text) {
 function makeIdentificationQuestion(definitionObj) {
   return {
     type: "Identification",
-    question: `What term matches the following description: ${definitionObj.definition}?`,
+    question: `${definitionObj.definition}.`,
     answer: definitionObj.term,
   };
 }
