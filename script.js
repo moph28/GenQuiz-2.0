@@ -1053,14 +1053,109 @@ function populateQuizLibrary() {
 
   applyRender();
 }
+function populateTeacherResultsPage(){
+
+const page = window.location.pathname.split("/").pop();
+
+if(page !== "teacher-results.html") return;
+
+const studentInput = document.getElementById("results-student-filter");
+const quizInput = document.getElementById("results-quiz-filter");
+const dateInput = document.getElementById("results-date-filter");
+const clearBtn = document.getElementById("results-clear-btn");
+
+const tableBody = document.getElementById("results-table-body");
+
+const session = getTeacherSession();
+
+if(!session) return;
+
+const quizzes = getSavedQuizzes();
+
+const teacherQuizCodes = quizzes
+.filter(q => q.teacherUsername === session.username)
+.map(q => q.quizCode);
+
+const allResults = getStudentResults();
+
+const teacherResults = allResults.filter(result =>
+teacherQuizCodes.includes(result.quizCode)
+);
+
+function render(results){
+
+if(!results.length){
+tableBody.innerHTML = `
+<tr>
+<td colspan="5" class="empty-cell">No results found.</td>
+</tr>`;
+return;
+}
+
+tableBody.innerHTML = results.map(r => `
+<tr>
+<td>${r.studentUsername}</td>
+<td>${r.quizCode}</td>
+<td>${r.score}/${r.totalItems}</td>
+<td>${r.percentage}%</td>
+<td>${new Date(r.submittedAt).toLocaleString()}</td>
+</tr>
+`).join("");
+
+}
+
+function applyFilters(){
+
+const student = studentInput.value.toLowerCase();
+const quiz = quizInput.value.toLowerCase();
+const date = dateInput.value;
+
+const filtered = teacherResults.filter(r =>{
+
+const studentMatch = r.studentUsername.toLowerCase().includes(student);
+const quizMatch = r.quizCode.toLowerCase().includes(quiz);
+
+let dateMatch = true;
+
+if(date){
+const resultDate = new Date(r.submittedAt).toISOString().slice(0,10);
+dateMatch = resultDate === date;
+}
+
+return studentMatch && quizMatch && dateMatch;
+
+});
+
+render(filtered);
+
+}
+
+studentInput.addEventListener("input",applyFilters);
+quizInput.addEventListener("input",applyFilters);
+dateInput.addEventListener("change",applyFilters);
+
+clearBtn.addEventListener("click",()=>{
+studentInput.value="";
+quizInput.value="";
+dateInput.value="";
+render(teacherResults);
+});
+
+render(teacherResults);
+
+}
 document.addEventListener("DOMContentLoaded", () => {
-  handleTeacherRegister();
-  handleTeacherLogin();
-  protectTeacherPages();
-  handleQuizGenerator();
-  handleStudentAccess();
-  handleStudentQuiz();
-  handleStudentResultPage();
-  populateTeacherDashboard();
-  populateQuizLibrary();
+
+handleTeacherRegister();
+handleTeacherLogin();
+protectTeacherPages();
+handleQuizGenerator();
+handleStudentAccess();
+handleStudentQuiz();
+handleStudentResultPage();
+
+populateTeacherDashboard();
+populateQuizLibrary();
+populateTeacherResultsPage();
+
 });
