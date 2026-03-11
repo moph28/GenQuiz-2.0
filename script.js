@@ -1144,6 +1144,244 @@ render(teacherResults);
 render(teacherResults);
 
 }
+function setSavedQuizzes(quizzes) {
+  localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
+}
+
+function deleteQuizById(quizId) {
+  const quizzes = getSavedQuizzes().filter((quiz) => quiz.quizId !== quizId);
+  setSavedQuizzes(quizzes);
+
+  const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
+  const results = resultsRaw ? JSON.parse(resultsRaw) : [];
+  const filteredResults = results.filter((result) => result.quizId !== quizId);
+  localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(filteredResults));
+}
+
+function renderLibraryQuizPreview(quiz) {
+  const panel = document.getElementById("quiz-preview-panel");
+  const title = document.getElementById("preview-quiz-title");
+  const meta = document.getElementById("quiz-preview-meta");
+  const questionsBox = document.getElementById("quiz-preview-questions");
+
+  if (!panel || !title || !meta || !questionsBox) return;
+
+  if (!quiz) {
+    panel.classList.add("hidden");
+    return;
+  }
+
+  panel.classList.remove("hidden");
+  title.textContent = quiz.title || "Saved Quiz";
+
+  meta.innerHTML = `
+    <p><strong>Quiz Code:</strong> ${quiz.quizCode || "--"}</p>
+    <p><strong>Difficulty:</strong> ${quiz.difficulty || "--"}</p>
+    <p><strong>Total Questions:</strong> ${quiz.questionCount ?? "--"}</p>
+    <p><strong>Date Created:</strong> ${formatDateTime(quiz.createdAt)}</p>
+  `;
+
+  questionsBox.innerHTML = quiz.questions
+    .map((item, index) => {
+      const optionsMarkup = item.options
+        ? `<ul>${item.options.map((option) => `<li>${option}</li>`).join("")}</ul>`
+        : "";
+
+      return `
+        <article class="preview-question">
+          <h3>${index + 1}. [${item.type}] ${item.question}</h3>
+          ${optionsMarkup}
+          <p><strong>Answer:</strong> ${item.answer}</p>
+        </article>
+      `;
+    })
+    .join("");
+
+  panel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderQuizLibraryTable(quizzes) {
+  const tbody = document.getElementById("quiz-library-body");
+  if (!tbody) return;
+
+  if (!quizzes.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-cell">No quizzes saved yet.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = quizzes
+    .map(
+      (quiz) => `
+        <tr>
+          <td>${quiz.title || "--"}</td>
+          <td>${quiz.quizCode || "--"}</td>
+          <td>${quiz.questionCount ?? "--"}</td>
+          <td>${quiz.difficulty || "--"}</td>
+          <td>${formatDateTime(quiz.createdAt)}</td>
+          <td>
+            <div class="library-actions">
+              <button class="inline-btn open-quiz-btn" type="button" data-id="${quiz.quizId}">
+                Open
+              </button>
+              <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
+                Copy Code
+              </button>
+              <button class="inline-btn danger-btn delete-quiz-btn" type="button" data-id="${quiz.quizId}">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+}
+
+function renderQuizLibraryCards(quizzes) {
+  const cardList = document.getElementById("quiz-library-cards");
+  if (!cardList) return;
+
+  if (!quizzes.length) {
+    cardList.innerHTML = `<div class="empty-state-card">No quizzes saved yet.</div>`;
+    return;
+  }
+
+  cardList.innerHTML = quizzes
+    .map(
+      (quiz) => `
+        <article class="library-card">
+          <h3>${quiz.title || "--"}</h3>
+
+          <div class="library-meta">
+            <div class="library-meta-row">
+              <span>Quiz Code</span>
+              <strong>${quiz.quizCode || "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Questions</span>
+              <strong>${quiz.questionCount ?? "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Difficulty</span>
+              <strong>${quiz.difficulty || "--"}</strong>
+            </div>
+            <div class="library-meta-row">
+              <span>Date Created</span>
+              <strong>${formatDateTime(quiz.createdAt)}</strong>
+            </div>
+          </div>
+
+          <div class="library-actions">
+            <button class="inline-btn open-quiz-btn" type="button" data-id="${quiz.quizId}">
+              Open
+            </button>
+            <button class="inline-btn copy-quiz-code-btn" type="button" data-code="${quiz.quizCode}">
+              Copy Code
+            </button>
+            <button class="inline-btn danger-btn delete-quiz-btn" type="button" data-id="${quiz.quizId}">
+              Delete
+            </button>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return;
+  }
+
+  const tempInput = document.createElement("input");
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+}
+
+function getTeacherOwnedQuizzes() {
+  const session = getTeacherSession();
+  if (!session) return [];
+
+  return getSavedQuizzes()
+    .filter((quiz) => quiz.teacherUsername === session.username)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function populateQuizLibrary() {
+  const currentPage = window.location.pathname.split("/").pop();
+  if (currentPage !== "quiz-library.html") return;
+
+  const searchInput = document.getElementById("quiz-library-search");
+
+  function applyRender() {
+    const allQuizzes = getTeacherOwnedQuizzes();
+    const keyword = (searchInput?.value || "").trim().toLowerCase();
+
+    const filteredQuizzes = allQuizzes.filter((quiz) => {
+      const title = String(quiz.title || "").toLowerCase();
+      const code = String(quiz.quizCode || "").toLowerCase();
+      return title.includes(keyword) || code.includes(keyword);
+    });
+
+    renderQuizLibraryTable(filteredQuizzes);
+    renderQuizLibraryCards(filteredQuizzes);
+    bindQuizLibraryActions(filteredQuizzes);
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", applyRender);
+  }
+
+  applyRender();
+}
+
+function bindQuizLibraryActions(filteredQuizzes) {
+  document.querySelectorAll(".copy-quiz-code-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizCode = button.getAttribute("data-code") || "";
+      copyTextToClipboard(quizCode);
+      button.textContent = "Copied";
+      setTimeout(() => {
+        button.textContent = "Copy Code";
+      }, 1000);
+    });
+  });
+
+  document.querySelectorAll(".open-quiz-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizId = button.getAttribute("data-id");
+      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
+      renderLibraryQuizPreview(quiz);
+    });
+  });
+
+  document.querySelectorAll(".delete-quiz-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const quizId = button.getAttribute("data-id");
+      const quiz = filteredQuizzes.find((item) => item.quizId === quizId);
+
+      if (!quiz) return;
+
+      const confirmed = window.confirm(
+        `Delete "${quiz.title}"?\n\nThis will also remove related student results.`
+      );
+
+      if (!confirmed) return;
+
+      deleteQuizById(quizId);
+      renderLibraryQuizPreview(null);
+      populateQuizLibrary();
+    });
+  });
+}
 document.addEventListener("DOMContentLoaded", () => {
 
 handleTeacherRegister();
