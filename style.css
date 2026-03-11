@@ -926,3 +926,14 @@ margin-bottom:6px;
 font-size:28px;
 font-weight:700;
 }
+.distribution-grid{
+display:grid;
+gap:10px;
+}
+
+.distribution-grid label{
+display:grid;
+grid-template-columns:1fr 100px;
+gap:10px;
+align-items:center;
+}
