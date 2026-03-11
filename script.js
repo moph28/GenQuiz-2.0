@@ -2,11 +2,17 @@ const STORAGE_KEYS = {
   teacherAccount: "genquiz_teacher_account",
   teacherSession: "genquiz_teacher_session",
   quizzes: "genquiz_saved_quizzes",
+  studentAccess: "genquiz_student_access",
+  studentResults: "genquiz_student_results",
+  activeStudentQuiz: "genquiz_active_student_quiz",
+  activeStudentResult: "genquiz_active_student_result",
 };
 
 function saveTeacherAccount(username, password) {
-  const teacherAccount = { username, password };
-  localStorage.setItem(STORAGE_KEYS.teacherAccount, JSON.stringify(teacherAccount));
+  localStorage.setItem(
+    STORAGE_KEYS.teacherAccount,
+    JSON.stringify({ username, password })
+  );
 }
 
 function getTeacherAccount() {
@@ -39,6 +45,40 @@ function saveQuiz(quiz) {
   const quizzes = getSavedQuizzes();
   quizzes.push(quiz);
   localStorage.setItem(STORAGE_KEYS.quizzes, JSON.stringify(quizzes));
+}
+
+function saveStudentAccess(username, quizCode) {
+  localStorage.setItem(
+    STORAGE_KEYS.studentAccess,
+    JSON.stringify({ username, quizCode })
+  );
+}
+
+function getStudentAccess() {
+  const raw = localStorage.getItem(STORAGE_KEYS.studentAccess);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveActiveStudentQuiz(payload) {
+  localStorage.setItem(STORAGE_KEYS.activeStudentQuiz, JSON.stringify(payload));
+}
+
+function getActiveStudentQuiz() {
+  const raw = localStorage.getItem(STORAGE_KEYS.activeStudentQuiz);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveStudentResult(result) {
+  const resultsRaw = localStorage.getItem(STORAGE_KEYS.studentResults);
+  const results = resultsRaw ? JSON.parse(resultsRaw) : [];
+  results.push(result);
+  localStorage.setItem(STORAGE_KEYS.studentResults, JSON.stringify(results));
+  localStorage.setItem(STORAGE_KEYS.activeStudentResult, JSON.stringify(result));
+}
+
+function getActiveStudentResult() {
+  const raw = localStorage.getItem(STORAGE_KEYS.activeStudentResult);
+  return raw ? JSON.parse(raw) : null;
 }
 
 function redirect(path) {
@@ -157,10 +197,7 @@ function makeMultipleChoiceQuestion(definitionObj, termPool) {
     termPool.filter((term) => term.toLowerCase() !== definitionObj.term.toLowerCase())
   ).slice(0, 3);
 
-  const options = shuffleArray([
-    definitionObj.term,
-    ...distractors,
-  ]);
+  const options = shuffleArray([definitionObj.term, ...distractors]);
 
   while (options.length < 4) {
     options.push("None of the above");
@@ -175,8 +212,7 @@ function makeMultipleChoiceQuestion(definitionObj, termPool) {
 }
 
 function generateQuizCode() {
-  const randomPart = Math.floor(1000 + Math.random() * 9000);
-  return `GQ${randomPart}`;
+  return `GQ${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function getSelectedQuestionTypes() {
@@ -272,10 +308,8 @@ function renderQuizPreview(quiz) {
 function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => resolve(String(reader.result || ""));
     reader.onerror = () => reject(new Error("Failed to read file."));
-
     reader.readAsText(file);
   });
 }
@@ -481,9 +515,130 @@ function handleQuizGenerator() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  handleTeacherRegister();
-  handleTeacherLogin();
-  protectTeacherPages();
-  handleQuizGenerator();
-});
+function handleStudentAccess() {
+  const form = document.getElementById("student-access-form");
+  const message = document.getElementById("student-access-message");
+  if (!form || !message) return;
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const username = document.getElementById("student-username").value.trim();
+    const quizCode = document.getElementById("student-quiz-code").value.trim().toUpperCase();
+
+    if (!username || !quizCode) {
+      message.className = "message error";
+      message.textContent = "Username and quiz code are required.";
+      return;
+    }
+
+    const quizzes = getSavedQuizzes();
+    const quiz = quizzes.find((item) => item.quizCode.toUpperCase() === quizCode);
+
+    if (!quiz) {
+      message.className = "message error";
+      message.textContent = "Quiz code not found.";
+      return;
+    }
+
+    saveStudentAccess(username, quizCode);
+    saveActiveStudentQuiz({
+      username,
+      quizCode,
+      quizId: quiz.quizId,
+      title: quiz.title,
+      questions: quiz.questions,
+      answers: {},
+    });
+
+    message.className = "message success";
+    message.textContent = "Quiz found. Redirecting...";
+
+    setTimeout(() => redirect("student-quiz.html"), 500);
+  });
+}
+
+function renderStudentQuestion(payload) {
+  const container = document.getElementById("student-quiz-container");
+  const progressText = document.getElementById("quiz-progress-text");
+  const progressBar = document.getElementById("quiz-progress-bar");
+  const title = document.getElementById("quiz-title");
+  const studentName = document.getElementById("quiz-student-name");
+  const codeDisplay = document.getElementById("quiz-code-display");
+  const prevBtn = document.getElementById("prev-question-btn");
+  const nextBtn = document.getElementById("next-question-btn");
+  const submitBtn = document.getElementById("submit-quiz-btn");
+
+  if (!container || !payload) return;
+
+  const { questions, currentIndex, username, quizCode, answers } = payload;
+  const currentQuestion = questions[currentIndex];
+
+  title.textContent = payload.title || "Quiz";
+  studentName.textContent = username;
+  codeDisplay.textContent = quizCode;
+  progressText.textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+  progressBar.style.width = `${((currentIndex + 1) / questions.length) * 100}%`;
+
+  let answerMarkup = "";
+
+  if (currentQuestion.type === "Multiple Choice" || currentQuestion.type === "True/False") {
+    const options = currentQuestion.options || [];
+    answerMarkup = `
+      <div class="answer-group">
+        ${options
+          .map(
+            (option, index) => `
+              <label class="answer-option">
+                <input
+                  type="radio"
+                  name="student-answer"
+                  value="${option.replace(/"/g, "&quot;")}"
+                  ${answers[currentIndex] === option ? "checked" : ""}
+                />
+                <span>${option}</span>
+              </label>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+  } else {
+    answerMarkup = `
+      <div class="form-group">
+        <label for="student-identification-answer">Your Answer</label>
+        <input
+          id="student-identification-answer"
+          type="text"
+          value="${answers[currentIndex] ? String(answers[currentIndex]).replace(/"/g, "&quot;") : ""}"
+          placeholder="Type your answer"
+        />
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <article class="question-card">
+      <h2>${currentQuestion.question}</h2>
+      ${answerMarkup}
+    </article>
+  `;
+
+  prevBtn.disabled = currentIndex === 0;
+  const isLast = currentIndex === questions.length - 1;
+  nextBtn.classList.toggle("hidden", isLast);
+  submitBtn.classList.toggle("hidden", !isLast);
+}
+
+function captureCurrentStudentAnswer(payload) {
+  const currentQuestion = payload.questions[payload.currentIndex];
+
+  if (currentQuestion.type === "Multiple Choice" || currentQuestion.type === "True/False") {
+    const selected = document.querySelector('input[name="student-answer"]:checked');
+    payload.answers[payload.currentIndex] = selected ? selected.value : "";
+  } else {
+    const input = document.getElementById("student-identification-answer");
+    payload.answers[payload.currentIndex] = input ? input.value.trim() : "";
+  }
+
+  saveActiveStudentQuiz(payload);
