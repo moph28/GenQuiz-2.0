@@ -62,39 +62,45 @@
             </div>
 
             <div class="two-col">
-              <div class="form-group">
-                <label for="difficulty">Difficulty</label>
-                <select id="difficulty">
-                  <option value="easy">Easy</option>
-                  <option value="medium" selected>Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
+  <div class="form-group">
+    <label for="difficulty">Difficulty</label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
 
-              <div class="form-group">
-                <label for="question-count">Number of Questions</label>
-                <input id="question-count" type="number" min="5" max="50" value="10" />
-              </div>
-            </div>
+  <div class="form-group">
+    <label for="question-count">Number of Questions</label>
+    <input id="question-count" type="number" min="1" max="50" value="0" />
+  </div>
+</div>
 
-            <div class="form-group">
-              <label>Question Distribution</label>
-              <div class="distribution-grid">
-                <label>
-                  <span>MCQ</span>
-                  <input id="mcq-count" type="number" min="0" value="0" />
-                </label>
-                <label>
-                  <span>True/False</span>
-                  <input id="tf-count" type="number" min="0" value="0" />
-                </label>
-                <label>
-                  <span>Identification</span>
-                  <input id="id-count" type="number" min="0" value="0" />
-                </label>
-              </div>
-              <p class="helper-text">Questions are generated in this order: MCQ → True/False → Identification.</p>
-            </div>
+<div class="form-group">
+  <label>Question Distribution</label>
+
+  <div class="distribution-grid">
+    <label>
+      <span>MCQ</span>
+      <input id="mcq-count" type="number" min="0" value="0" />
+    </label>
+
+    <label>
+      <span>True/False</span>
+      <input id="tf-count" type="number" min="0" value="0" />
+    </label>
+
+    <label>
+      <span>Identification</span>
+      <input id="id-count" type="number" min="0" value="0" />
+    </label>
+  </div>
+
+  <p class="helper-text">
+    Example: 5 MCQ + 5 True/False = 10 total questions.
+  </p>
+</div>
 
             <p id="generator-message" class="message" aria-live="polite"></p>
 
