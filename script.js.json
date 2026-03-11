@@ -1,0 +1,11 @@
+function selectRole(role){
+
+    if(role === "teacher"){
+        alert("Teacher dashboard coming next");
+    }
+
+    if(role === "student"){
+        alert("Student quiz page coming next");
+    }
+
+}
