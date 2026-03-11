@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Library | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon small">GQ</div>
+        <div>
+          <h2>GenQuiz</h2>
+          <p>Teacher Panel</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="teacher-dashboard.html">Dashboard</a>
+        <a class="nav-item" href="quiz-generator.html">Quiz Generator</a>
+        <a class="nav-item active" href="quiz-library.html">Quiz Library</a>
+        <a class="nav-item" href="#">Results</a>
+      </nav>
+
+      <button id="logout-btn" class="sidebar-back" type="button">Log Out</button>
+    </aside>
+
+    <section class="dashboard-main">
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">Quiz Library</p>
+          <h1>Saved Quizzes</h1>
+        </div>
+        <div class="header-chip">Teacher Storage</div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Manage</p>
+            <h2>Your Generated Quizzes</h2>
+          </div>
+        </div>
+
+        <div class="library-toolbar">
+          <div class="form-group no-gap">
+            <label for="quiz-library-search">Search</label>
+            <input
+              id="quiz-library-search"
+              type="text"
+              placeholder="Search by title or quiz code"
+            />
+          </div>
+        </div>
+
+        <div class="table-wrap desktop-only">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Quiz Code</th>
+                <th>Questions</th>
+                <th>Difficulty</th>
+                <th>Date Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="quiz-library-body">
+              <tr>
+                <td colspan="6" class="empty-cell">No quizzes saved yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="quiz-library-cards" class="library-card-list mobile-only">
+          <div class="empty-state-card">No quizzes saved yet.</div>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
