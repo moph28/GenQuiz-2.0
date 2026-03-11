@@ -716,3 +716,86 @@ select {
     display: grid;
   }
 }
+.library-toolbar {
+  margin-bottom: 18px;
+}
+
+.no-gap {
+  gap: 8px;
+}
+
+.library-card-list {
+  display: grid;
+  gap: 14px;
+}
+
+.library-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.library-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.library-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.library-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.library-meta-row strong {
+  color: var(--text);
+}
+
+.inline-btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.empty-state-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--muted);
+}
+
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+
+  .library-meta-row {
+    display: grid;
+    gap: 4px;
+  }
+}
