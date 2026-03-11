@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Registration | GenQuiz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-card">
+      <div class="brand-row compact">
+        <div class="brand-icon small">GQ</div>
+        <div>
+          <h1 class="auth-title">Teacher Registration</h1>
+          <p class="auth-subtitle">Create a teacher account to manage quizzes.</p>
+        </div>
+      </div>
+
+      <form id="teacher-register-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="register-username">Username</label>
+          <input id="register-username" name="username" type="text" placeholder="Enter username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="register-password">Password</label>
+          <input id="register-password" name="password" type="password" placeholder="Enter password" required />
+        </div>
+
+        <div class="form-group">
+          <label for="register-confirm-password">Confirm Password</label>
+          <input id="register-confirm-password" name="confirmPassword" type="password" placeholder="Confirm password" required />
+        </div>
+
+        <p id="register-message" class="message" aria-live="polite"></p>
+
+        <div class="button-stack">
+          <button class="primary-btn" type="submit">Create Account</button>
+          <a class="secondary-btn" href="teacher-login.html">Back to Login</a>
+          <a class="text-link" href="index.html">Back to Role Selection</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
